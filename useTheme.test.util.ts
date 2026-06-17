@@ -76,8 +76,8 @@ export const resetMockPrefersColorScheme = () => {
 
 export const getRoot = () => document.documentElement;
 
-export const getStoredTheme = () => window.localStorage.getItem(STORAGE_KEY);
+export const getStoredTheme = (storageKey = STORAGE_KEY) => window.localStorage.getItem(storageKey);
 
-export const setStoredTheme = (theme: string) => {
-  window.localStorage.setItem(STORAGE_KEY, theme);
+export const setStoredTheme = (theme: string, storageKey = STORAGE_KEY) => {
+  window.localStorage.setItem(storageKey, theme);
 };

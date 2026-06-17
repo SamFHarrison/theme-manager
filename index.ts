@@ -1,9 +1,12 @@
+'use client';
+
 export type {
   ResolvedTheme,
-  ThemeClassModeOptions,
-  ThemeDataAttributeModeOptions,
+  RootThemeState,
+  ThemeConfig,
   ThemePreference,
-  UseThemeOptions
+  ThemeProviderProps
 } from './types';
+export * from './ThemeProvider';
 export * from './useTheme';
 export { isValidThemePreference } from './useTheme.utils';

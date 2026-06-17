@@ -1,105 +1,83 @@
-import { useCallback, useLayoutEffect, useMemo, useSyncExternalStore } from 'react';
+'use client';
 
-import { CHANGE_EVENT } from './constants';
-import { ResolvedTheme, ThemePreference, UseThemeOptions, UseThemeReturn } from './types';
+import { useCallback, useLayoutEffect, useSyncExternalStore } from 'react';
+
+import { ResolvedTheme, ThemePreference, UseThemeReturn } from './types';
+import { useThemeConfigContext } from './ThemeProvider';
 import {
   applyTheme,
   getPreferredTheme,
   getServerSnapshot,
   getSnapshot,
-  normalizeThemeOptions,
+  NormalizedThemeConfig,
   safelySetStoredTheme
 } from './useTheme.utils';
 
-/**
- * Subscribes React to every external source that can affect the
- * theme snapshot - local storage, root element classes, and browser media.
- */
-function subscribe(callback: () => void, options?: UseThemeOptions) {
+function subscribe(callback: () => void, config: NormalizedThemeConfig) {
   if (typeof window === 'undefined' || typeof document === 'undefined') {
     return () => {};
   }
 
-  const normalizedOptions = normalizeThemeOptions(options);
   const mediaQuery =
     typeof window.matchMedia === 'function'
       ? window.matchMedia('(prefers-color-scheme: dark)')
       : null;
-  const handleStorage = () => callback();
-  const handleThemeChange = () => callback();
-  const handleMediaChange = () => {
-    if (normalizedOptions.mode === 'data-attribute') {
-      applyTheme(getPreferredTheme(normalizedOptions), normalizedOptions);
+  const handleStorage = (event: StorageEvent) => {
+    if (event.key && event.key !== config.storageKey) {
+      return;
     }
 
     callback();
   };
-
-  window.addEventListener('storage', handleStorage); // Keeps different browser tabs/windows in sync
-  window.addEventListener(CHANGE_EVENT, handleThemeChange); // Keeps the current tab in sync
-  mediaQuery?.addEventListener('change', handleMediaChange); // Keeps `resolvedTheme` up to date when user changes system prefs
-
-  // Watch the root element for external theme mutations.
+  const handleThemeChange = (event: Event) => {
+    if (event.type === config.changeEventName) {
+      callback();
+    }
+  };
+  const handleMediaChange = () => callback();
   const observer = new MutationObserver(() => callback());
+
+  window.addEventListener('storage', handleStorage);
+  window.addEventListener(config.changeEventName, handleThemeChange);
+  mediaQuery?.addEventListener('change', handleMediaChange);
   observer.observe(document.documentElement, {
-    attributes: true,
-    attributeFilter: [normalizedOptions.mode === 'data-attribute' ? normalizedOptions.attributeName : 'class']
+    attributes: true
   });
 
   return () => {
     window.removeEventListener('storage', handleStorage);
-    window.removeEventListener(CHANGE_EVENT, handleThemeChange);
+    window.removeEventListener(config.changeEventName, handleThemeChange);
     mediaQuery?.removeEventListener('change', handleMediaChange);
     observer.disconnect();
   };
 }
 
-/**
- * React hook for reading and updating the user's theme preference.
- *
- * The hook returns the following in an object:
- * - `preferredTheme` - the user's saved preference: `"auto"`, `"light"`, or `"dark"`.
- * - `resolvedTheme` - the active visual theme: `"light"` or `"dark"`.
- * - `setTheme` - a function for saving and applying a new theme preference.
- *
- * @example
- * ```tsx
- * const { preferredTheme, resolvedTheme, setTheme } = useTheme();
- *
- * return (
- *   <button onClick={() => setTheme('dark')}>
- *     Current theme: {resolvedTheme}
- *   </button>
- * );
- * ```
- */
-export function useTheme(options?: UseThemeOptions): UseThemeReturn {
-  const normalizedOptions = useMemo(() => normalizeThemeOptions(options), [options]);
-
+export function useTheme(): UseThemeReturn {
+  const config = useThemeConfigContext();
   const snapshot = useSyncExternalStore(
-    useCallback(callback => subscribe(callback, normalizedOptions), [normalizedOptions]),
-    useCallback(() => getSnapshot(normalizedOptions), [normalizedOptions]),
-    getServerSnapshot
+    useCallback(callback => subscribe(callback, config), [config]),
+    useCallback(() => getSnapshot(config), [config]),
+    useCallback(() => getServerSnapshot(config), [config])
   );
   const [preferredTheme, resolvedTheme] = snapshot.split(':') as [ThemePreference, ResolvedTheme];
 
-  // Reapply the saved preference after refresh, because localStorage persists
-  // but root classes do not. Layout effect also reduces chance of wrong theme flash.
   useLayoutEffect(() => {
-    applyTheme(preferredTheme, normalizedOptions);
-  }, [normalizedOptions, preferredTheme]);
+    applyTheme(preferredTheme, config);
+  }, [config, preferredTheme]);
 
-  const setTheme = useCallback((theme: ThemePreference) => {
-    // SSR safety
-    if (typeof window === 'undefined') {
-      console.warn('setTheme() can only be used in a browser environment.');
-      return;
-    }
+  const setTheme = useCallback(
+    (theme: ThemePreference) => {
+      if (typeof window === 'undefined') {
+        console.warn('setTheme() can only be used in a browser environment.');
+        return;
+      }
 
-    safelySetStoredTheme(theme);
-    applyTheme(theme, normalizedOptions);
-    window.dispatchEvent(new Event(CHANGE_EVENT));
-  }, [normalizedOptions]);
+      safelySetStoredTheme(theme, config);
+      applyTheme(theme, config);
+      window.dispatchEvent(new Event(config.changeEventName));
+    },
+    [config]
+  );
 
   return {
     preferredTheme,

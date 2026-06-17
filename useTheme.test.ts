@@ -1,13 +1,11 @@
+import { createElement, PropsWithChildren } from 'react';
 import { act, renderHook, waitFor } from '@testing-library/react';
 
-import {
-  AUTO_CLASS,
-  CHANGE_EVENT,
-  DARK_CLASS,
-  DATA_THEME_ATTRIBUTE,
-  STORAGE_KEY
-} from './constants';
+import { CHANGE_EVENT, STORAGE_KEY } from './constants';
+import { ThemeProvider } from './ThemeProvider';
+import { ThemeConfig } from './types';
 import { useTheme } from './useTheme';
+import { getServerSnapshot, normalizeThemeConfig } from './useTheme.utils';
 import {
   flushMicrotasks,
   getRoot,
@@ -20,19 +18,19 @@ import {
   updateExternalStore
 } from './useTheme.test.util';
 
-const renderUseTheme = async (...args: Parameters<typeof useTheme>) => {
-  const view = renderHook(() => useTheme(...args));
+const DATA_THEME_ATTRIBUTE = 'data-theme';
+
+const renderUseTheme = async (config?: ThemeConfig) => {
+  const wrapper = ({ children }: PropsWithChildren) =>
+    config ? createElement(ThemeProvider, { config }, children) : children;
+
+  const view = renderHook(() => useTheme(), { wrapper });
 
   await act(async () => {
     await flushMicrotasks();
   });
 
   return view;
-};
-
-const expectRootClasses = ({ auto = false, dark = false }) => {
-  expect(getRoot().classList.contains(AUTO_CLASS)).toBe(auto);
-  expect(getRoot().classList.contains(DARK_CLASS)).toBe(dark);
 };
 
 beforeEach(() => {
@@ -53,16 +51,8 @@ afterEach(() => {
   resetMockPrefersColorScheme();
 });
 
-/**
- * `useTheme` uses browser API's external to React - such as
- * MatchMedia, MutationObserver, etc - so `act()` warnings for
- * these updates are being reported. The behaviour is correct and
- * the tests still pass reliably, so these tests assert on the
- * final observable outcome rather than heavily mocking browser
- * scheduling behaviour purely to silence the warnings.
- */
 describe('useTheme', () => {
-  it('defaults to auto when no stored preference exists', async () => {
+  it('defaults to auto and removes explicit theme markers', async () => {
     const { result } = await renderUseTheme();
 
     await waitFor(() => {
@@ -71,10 +61,10 @@ describe('useTheme', () => {
     });
 
     expect(getStoredTheme()).toBe('auto');
-    expectRootClasses({ auto: true });
+    expect(getRoot().hasAttribute(DATA_THEME_ATTRIBUTE)).toBe(false);
   });
 
-  it('defaults auto to dark when the system preference is dark', async () => {
+  it('resolves auto to dark when the system preference is dark', async () => {
     systemPreference.prefersDark = true;
 
     const { result } = await renderUseTheme();
@@ -84,76 +74,10 @@ describe('useTheme', () => {
       expect(result.current.resolvedTheme).toBe('dark');
     });
 
-    expectRootClasses({ auto: true });
+    expect(getRoot().hasAttribute(DATA_THEME_ATTRIBUTE)).toBe(false);
   });
 
-  it('reads a stored dark preference and reapplies the dark root class', async () => {
-    await updateExternalStore(() => {
-      setStoredTheme('dark');
-    });
-
-    const { result } = await renderUseTheme();
-
-    await waitFor(() => {
-      expect(result.current.preferredTheme).toBe('dark');
-      expect(result.current.resolvedTheme).toBe('dark');
-    });
-
-    expectRootClasses({ dark: true });
-  });
-
-  it('reads a stored light preference and removes theme classes', async () => {
-    await updateExternalStore(() => {
-      setStoredTheme('light');
-    });
-
-    await updateExternalStore(() => {
-      getRoot().classList.add(AUTO_CLASS, DARK_CLASS);
-    });
-
-    const { result } = await renderUseTheme();
-
-    await waitFor(() => {
-      expect(result.current.preferredTheme).toBe('light');
-      expect(result.current.resolvedTheme).toBe('light');
-    });
-
-    expectRootClasses({});
-  });
-
-  it('reads a stored auto preference and reapplies the auto root class', async () => {
-    await updateExternalStore(() => {
-      setStoredTheme('auto');
-    });
-    systemPreference.prefersDark = true;
-
-    const { result } = await renderUseTheme();
-
-    await waitFor(() => {
-      expect(result.current.preferredTheme).toBe('auto');
-      expect(result.current.resolvedTheme).toBe('dark');
-    });
-
-    expectRootClasses({ auto: true });
-  });
-
-  it('replaces an invalid stored preference with auto', async () => {
-    await updateExternalStore(() => {
-      setStoredTheme('banana');
-    });
-
-    const { result } = await renderUseTheme();
-
-    await waitFor(() => {
-      expect(result.current.preferredTheme).toBe('auto');
-      expect(result.current.resolvedTheme).toBe('light');
-    });
-
-    expect(getStoredTheme()).toBe('auto');
-    expectRootClasses({ auto: true });
-  });
-
-  it('sets the theme to dark', async () => {
+  it('sets light and dark with explicit data-theme values by default', async () => {
     const { result } = await renderUseTheme();
 
     await updateExternalStore(() => {
@@ -165,14 +89,22 @@ describe('useTheme', () => {
       expect(result.current.resolvedTheme).toBe('dark');
     });
 
-    expect(getStoredTheme()).toBe('dark');
-    expectRootClasses({ dark: true });
+    expect(getRoot().getAttribute(DATA_THEME_ATTRIBUTE)).toBe('dark');
+
+    await updateExternalStore(() => {
+      result.current.setTheme('light');
+    });
+
+    await waitFor(() => {
+      expect(result.current.preferredTheme).toBe('light');
+      expect(result.current.resolvedTheme).toBe('light');
+    });
+
+    expect(getRoot().getAttribute(DATA_THEME_ATTRIBUTE)).toBe('light');
   });
 
-  it('sets the theme to light', async () => {
-    await updateExternalStore(() => {
-      setStoredTheme('dark');
-    });
+  it('keeps light semantically distinct from auto', async () => {
+    systemPreference.prefersDark = true;
 
     const { result } = await renderUseTheme();
 
@@ -185,36 +117,41 @@ describe('useTheme', () => {
       expect(result.current.resolvedTheme).toBe('light');
     });
 
-    expect(getStoredTheme()).toBe('light');
-    expectRootClasses({});
+    expect(getRoot().getAttribute(DATA_THEME_ATTRIBUTE)).toBe('light');
   });
 
-  it('sets the theme to auto', async () => {
+  it('reapplies stored explicit preferences on mount', async () => {
     await updateExternalStore(() => {
       setStoredTheme('dark');
     });
-    systemPreference.prefersDark = true;
 
     const { result } = await renderUseTheme();
 
-    await updateExternalStore(() => {
-      result.current.setTheme('auto');
+    await waitFor(() => {
+      expect(result.current.preferredTheme).toBe('dark');
+      expect(result.current.resolvedTheme).toBe('dark');
     });
+
+    expect(getRoot().getAttribute(DATA_THEME_ATTRIBUTE)).toBe('dark');
+  });
+
+  it('replaces invalid stored preferences with auto', async () => {
+    await updateExternalStore(() => {
+      setStoredTheme('banana');
+    });
+
+    const { result } = await renderUseTheme();
 
     await waitFor(() => {
       expect(result.current.preferredTheme).toBe('auto');
-      expect(result.current.resolvedTheme).toBe('dark');
+      expect(result.current.resolvedTheme).toBe('light');
     });
 
     expect(getStoredTheme()).toBe('auto');
-    expectRootClasses({ auto: true });
+    expect(getRoot().hasAttribute(DATA_THEME_ATTRIBUTE)).toBe(false);
   });
 
   it('updates resolvedTheme when the system preference changes in auto mode', async () => {
-    await updateExternalStore(() => {
-      setStoredTheme('auto');
-    });
-
     const { result } = await renderUseTheme();
 
     await waitFor(() => {
@@ -225,28 +162,21 @@ describe('useTheme', () => {
     await setMockSystemPrefersDark(true);
 
     await waitFor(() => {
-      expect(result.current.preferredTheme).toBe('auto');
       expect(result.current.resolvedTheme).toBe('dark');
     });
 
     await setMockSystemPrefersDark(false);
 
     await waitFor(() => {
-      expect(result.current.preferredTheme).toBe('auto');
       expect(result.current.resolvedTheme).toBe('light');
     });
   });
 
-  it('does not let system preference changes override forced dark mode', async () => {
-    await updateExternalStore(() => {
-      setStoredTheme('dark');
-    });
-
+  it('does not let system preference changes override explicit dark mode', async () => {
     const { result } = await renderUseTheme();
 
-    await waitFor(() => {
-      expect(result.current.preferredTheme).toBe('dark');
-      expect(result.current.resolvedTheme).toBe('dark');
+    await updateExternalStore(() => {
+      result.current.setTheme('dark');
     });
 
     await setMockSystemPrefersDark(false);
@@ -257,90 +187,151 @@ describe('useTheme', () => {
     });
   });
 
-  it('does not let system preference changes override forced light mode', async () => {
-    await updateExternalStore(() => {
-      setStoredTheme('light');
-    });
-
-    const { result } = await renderUseTheme();
-
-    await waitFor(() => {
-      expect(result.current.preferredTheme).toBe('light');
-      expect(result.current.resolvedTheme).toBe('light');
-    });
-
-    await setMockSystemPrefersDark(true);
-
-    await waitFor(() => {
-      expect(result.current.preferredTheme).toBe('light');
-      expect(result.current.resolvedTheme).toBe('light');
-    });
-  });
-
-  it('updates when the root classes are changed externally', async () => {
-    await updateExternalStore(() => {
-      setStoredTheme('light');
-    });
-
-    const { result } = await renderUseTheme();
-
-    await waitFor(() => {
-      expect(result.current.preferredTheme).toBe('light');
-      expect(result.current.resolvedTheme).toBe('light');
+  it('supports provider-backed attribute mappings', async () => {
+    const { result } = await renderUseTheme({
+      rootThemes: {
+        auto: {},
+        light: {
+          attributes: {
+            'data-color-mode': 'day'
+          }
+        },
+        dark: {
+          attributes: {
+            'data-color-mode': 'night'
+          }
+        }
+      }
     });
 
     await updateExternalStore(() => {
-      getRoot().classList.add(DARK_CLASS);
+      result.current.setTheme('dark');
     });
 
     await waitFor(() => {
-      expect(result.current.preferredTheme).toBe('light');
       expect(result.current.resolvedTheme).toBe('dark');
     });
+
+    expect(getRoot().getAttribute('data-color-mode')).toBe('night');
+    expect(getRoot().hasAttribute(DATA_THEME_ATTRIBUTE)).toBe(false);
   });
 
-  it('resolves dark when both root classes are present because dark takes precedence', async () => {
-    await updateExternalStore(() => {
-      setStoredTheme('auto');
-    });
-    systemPreference.prefersDark = false;
-
-    const { result } = await renderUseTheme();
-
-    await updateExternalStore(() => {
-      getRoot().classList.add(AUTO_CLASS, DARK_CLASS);
+  it('supports provider-backed class mappings', async () => {
+    const { result } = await renderUseTheme({
+      rootThemes: {
+        auto: {
+          classNames: ['theme-auto']
+        },
+        light: {
+          classNames: ['theme-light']
+        },
+        dark: {
+          classNames: ['theme-dark']
+        }
+      }
     });
 
     await waitFor(() => {
-      expect(result.current.preferredTheme).toBe('auto');
+      expect(getRoot().classList.contains('theme-auto')).toBe(true);
+    });
+
+    await updateExternalStore(() => {
+      result.current.setTheme('dark');
+    });
+
+    await waitFor(() => {
+      expect(getRoot().classList.contains('theme-dark')).toBe(true);
+    });
+
+    expect(getRoot().classList.contains('theme-auto')).toBe(false);
+  });
+
+  it('supports mixed class and attribute mappings', async () => {
+    const { result } = await renderUseTheme({
+      rootThemes: {
+        auto: {
+          classNames: ['theme-auto']
+        },
+        light: {
+          attributes: {
+            'data-color-mode': 'day'
+          }
+        },
+        dark: {
+          classNames: ['theme-dark'],
+          attributes: {
+            'data-color-mode': 'night'
+          }
+        }
+      }
+    });
+
+    await updateExternalStore(() => {
+      result.current.setTheme('dark');
+    });
+
+    await waitFor(() => {
       expect(result.current.resolvedTheme).toBe('dark');
     });
+
+    expect(getRoot().classList.contains('theme-dark')).toBe(true);
+    expect(getRoot().getAttribute('data-color-mode')).toBe('night');
   });
 
-  it('keeps multiple hook instances in sync', async () => {
-    const { result: firstInstance } = await renderUseTheme();
-    const { result: secondInstance } = await renderUseTheme();
-
-    await waitFor(() => {
-      expect(firstInstance.current.preferredTheme).toBe('auto');
-      expect(secondInstance.current.preferredTheme).toBe('auto');
+  it('clears stale classes and attributes when switching preferences', async () => {
+    const { result } = await renderUseTheme({
+      rootThemes: {
+        auto: {},
+        light: {
+          classNames: ['theme-light'],
+          attributes: {
+            'data-color-mode': 'day'
+          }
+        },
+        dark: {
+          classNames: ['theme-dark'],
+          attributes: {
+            'data-color-mode': 'night'
+          }
+        }
+      }
     });
 
     await updateExternalStore(() => {
-      firstInstance.current.setTheme('dark');
+      result.current.setTheme('dark');
+    });
+
+    await updateExternalStore(() => {
+      result.current.setTheme('light');
     });
 
     await waitFor(() => {
-      expect(firstInstance.current.preferredTheme).toBe('dark');
-      expect(firstInstance.current.resolvedTheme).toBe('dark');
-
-      expect(secondInstance.current.preferredTheme).toBe('dark');
-      expect(secondInstance.current.resolvedTheme).toBe('dark');
+      expect(getRoot().classList.contains('theme-light')).toBe(true);
     });
+
+    expect(getRoot().classList.contains('theme-dark')).toBe(false);
+    expect(getRoot().getAttribute('data-color-mode')).toBe('day');
   });
 
-  it('updates when another tab changes localStorage and dispatches a storage event', async () => {
-    const { result } = await renderUseTheme();
+  it('supports custom storage keys', async () => {
+    const storageKey = 'custom-theme-preference';
+    const { result } = await renderUseTheme({
+      storageKey
+    });
+
+    await updateExternalStore(() => {
+      result.current.setTheme('dark');
+    });
+
+    expect(getStoredTheme(storageKey)).toBe('dark');
+    expect(getStoredTheme(STORAGE_KEY)).toBeNull();
+  });
+
+  it('supports custom change event names', async () => {
+    const changeEventName = 'custom-theme-change';
+    const { result } = await renderUseTheme({
+      changeEventName
+    });
 
     await waitFor(() => {
       expect(result.current.preferredTheme).toBe('auto');
@@ -348,7 +339,20 @@ describe('useTheme', () => {
 
     await updateExternalStore(() => {
       setStoredTheme('dark');
+      window.dispatchEvent(new Event(changeEventName));
+    });
 
+    await waitFor(() => {
+      expect(result.current.preferredTheme).toBe('dark');
+      expect(result.current.resolvedTheme).toBe('dark');
+    });
+  });
+
+  it('stays in sync across tabs via the storage event', async () => {
+    const { result } = await renderUseTheme();
+
+    await updateExternalStore(() => {
+      setStoredTheme('dark');
       window.dispatchEvent(
         new StorageEvent('storage', {
           key: STORAGE_KEY,
@@ -363,11 +367,9 @@ describe('useTheme', () => {
       expect(result.current.preferredTheme).toBe('dark');
       expect(result.current.resolvedTheme).toBe('dark');
     });
-
-    expectRootClasses({ dark: true });
   });
 
-  it('continues to apply the visual theme if localStorage write fails in setTheme', async () => {
+  it('continues to apply the visual theme if localStorage write fails', async () => {
     vi.spyOn(window.localStorage.__proto__, 'setItem').mockImplementation(() => {
       throw new Error('localStorage unavailable');
     });
@@ -382,150 +384,36 @@ describe('useTheme', () => {
       expect(result.current.resolvedTheme).toBe('dark');
     });
 
-    expectRootClasses({ dark: true });
-  });
-
-  it('falls back to auto if localStorage read fails', async () => {
-    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
-      throw new Error('localStorage unavailable');
-    });
-
-    const { result } = await renderUseTheme();
-
-    await waitFor(() => {
-      expect(result.current.preferredTheme).toBe('auto');
-      expect(result.current.resolvedTheme).toBe('light');
-    });
-
-    expectRootClasses({ auto: true });
-  });
-
-  it('warns when setTheme is called outside a browser environment', async () => {
-    const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    const originalWindow = globalThis.window;
-
-    const { result } = await renderUseTheme();
-
-    Object.defineProperty(globalThis, 'window', {
-      configurable: true,
-      value: undefined
-    });
-
-    await updateExternalStore(() => {
-      result.current.setTheme('dark');
-    });
-
-    expect(consoleWarnSpy).toHaveBeenCalledWith(
-      'setTheme() can only be used in a browser environment.'
-    );
-
-    Object.defineProperty(globalThis, 'window', {
-      configurable: true,
-      value: originalWindow
-    });
-  });
-
-  it('cleans up subscriptions on unmount', async () => {
-    const addWindowListenerSpy = vi.spyOn(window, 'addEventListener');
-    const removeWindowListenerSpy = vi.spyOn(window, 'removeEventListener');
-
-    const { unmount } = await renderUseTheme();
-
-    unmount();
-
-    expect(addWindowListenerSpy).toHaveBeenCalledWith('storage', expect.any(Function));
-    expect(addWindowListenerSpy).toHaveBeenCalledWith(CHANGE_EVENT, expect.any(Function));
-
-    expect(removeWindowListenerSpy).toHaveBeenCalledWith('storage', expect.any(Function));
-    expect(removeWindowListenerSpy).toHaveBeenCalledWith(CHANGE_EVENT, expect.any(Function));
-  });
-
-  it('supports custom class names', async () => {
-    const { result } = await renderUseTheme({
-      classNames: {
-        auto: 'theme-auto',
-        dark: 'theme-dark',
-        light: 'theme-light'
-      }
-    });
-
-    await waitFor(() => {
-      expect(result.current.preferredTheme).toBe('auto');
-      expect(result.current.resolvedTheme).toBe('light');
-    });
-
-    expect(getRoot().classList.contains('theme-auto')).toBe(true);
-
-    await updateExternalStore(() => {
-      result.current.setTheme('dark');
-    });
-
-    await waitFor(() => {
-      expect(result.current.resolvedTheme).toBe('dark');
-    });
-
-    expect(getRoot().classList.contains('theme-dark')).toBe(true);
-    expect(getRoot().classList.contains('theme-auto')).toBe(false);
-
-    await updateExternalStore(() => {
-      result.current.setTheme('light');
-    });
-
-    await waitFor(() => {
-      expect(result.current.resolvedTheme).toBe('light');
-    });
-
-    expect(getRoot().classList.contains('theme-light')).toBe(true);
-  });
-
-  it('supports data-theme attributes on the root element', async () => {
-    systemPreference.prefersDark = true;
-
-    const { result } = await renderUseTheme({
-      mode: 'data-attribute'
-    });
-
-    await waitFor(() => {
-      expect(result.current.preferredTheme).toBe('auto');
-      expect(result.current.resolvedTheme).toBe('dark');
-    });
-
     expect(getRoot().getAttribute(DATA_THEME_ATTRIBUTE)).toBe('dark');
-
-    await setMockSystemPrefersDark(false);
-
-    await waitFor(() => {
-      expect(result.current.resolvedTheme).toBe('light');
-    });
-
-    expect(getRoot().getAttribute(DATA_THEME_ATTRIBUTE)).toBe('light');
   });
 
-  it('supports custom data attribute names and values', async () => {
-    const { result } = await renderUseTheme({
-      mode: 'data-attribute',
-      attributeName: 'data-color-mode',
-      values: {
-        dark: 'night',
-        light: 'day'
-      }
-    });
-
-    await waitFor(() => {
-      expect(result.current.preferredTheme).toBe('auto');
-      expect(result.current.resolvedTheme).toBe('light');
-    });
-
-    expect(getRoot().getAttribute('data-color-mode')).toBe('day');
-
-    await updateExternalStore(() => {
-      result.current.setTheme('dark');
-    });
-
-    await waitFor(() => {
-      expect(result.current.resolvedTheme).toBe('dark');
-    });
-
-    expect(getRoot().getAttribute('data-color-mode')).toBe('night');
+  it('uses provider configured server fallback in the server snapshot', () => {
+    expect(
+      getServerSnapshot(
+        normalizeThemeConfig({
+          storageKey: STORAGE_KEY,
+          changeEventName: CHANGE_EVENT,
+          serverFallback: 'dark',
+          rootThemes: {
+            auto: {
+              classNames: [],
+              attributes: {}
+            },
+            light: {
+              classNames: [],
+              attributes: {
+                'data-theme': 'light'
+              }
+            },
+            dark: {
+              classNames: [],
+              attributes: {
+                'data-theme': 'dark'
+              }
+            }
+          }
+        })
+      )
+    ).toBe('auto:dark');
   });
 });

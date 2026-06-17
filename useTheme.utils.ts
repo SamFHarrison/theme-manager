@@ -1,94 +1,129 @@
+import { CHANGE_EVENT, DEFAULT_THEME, DEFAULT_THEME_CONFIG, STORAGE_KEY } from './constants';
 import {
-  AUTO_CLASS,
-  DARK_CLASS,
-  DARK_THEME_VALUE,
-  DATA_THEME_ATTRIBUTE,
-  DEFAULT_THEME,
-  LIGHT_THEME_VALUE,
-  STORAGE_KEY
-} from './constants';
-import { ResolvedTheme, ThemePreference, ThemeSnapshot, UseThemeOptions } from './types';
+  ResolvedTheme,
+  RootThemeState,
+  ThemeConfig,
+  ThemePreference,
+  ThemeSnapshot
+} from './types';
 
-type NormalizedClassModeOptions = {
-  mode: 'class';
-  classNames: {
-    auto: string;
-    dark: string;
-    light?: string;
-  };
+type NormalizedRootThemeState = {
+  classNames: string[];
+  attributes: Record<string, string>;
 };
 
-type NormalizedDataAttributeModeOptions = {
-  mode: 'data-attribute';
-  attributeName: string;
-  values: {
-    light: string;
-    dark: string;
+export type NormalizedThemeConfig = {
+  storageKey: string;
+  changeEventName: string;
+  serverFallback: ResolvedTheme;
+  rootThemes: {
+    auto: NormalizedRootThemeState;
+    light: NormalizedRootThemeState;
+    dark: NormalizedRootThemeState;
   };
 };
-
-export type NormalizedThemeOptions = NormalizedClassModeOptions | NormalizedDataAttributeModeOptions;
 
 let currentThemePreference: ThemePreference | null = null;
 
-function getNonEmptyString(value: string | undefined, fallback: string) {
-  return value && value.trim() ? value : fallback;
+function normalizeClassNames(classNames?: string[]) {
+  return (classNames ?? []).map(name => name.trim()).filter(Boolean);
 }
 
-export function normalizeThemeOptions(options?: UseThemeOptions): NormalizedThemeOptions {
-  if (options?.mode === 'data-attribute') {
-    return {
-      mode: 'data-attribute',
-      attributeName: getNonEmptyString(options.attributeName, DATA_THEME_ATTRIBUTE),
-      values: {
-        light: getNonEmptyString(options.values?.light, LIGHT_THEME_VALUE),
-        dark: getNonEmptyString(options.values?.dark, DARK_THEME_VALUE)
-      }
-    };
+function normalizeAttributes(attributes?: Record<string, string>) {
+  if (!attributes) {
+    return {};
   }
 
+  return Object.fromEntries(
+    Object.entries(attributes)
+      .map(([name, value]) => [name.trim(), value.trim()] as const)
+      .filter(([name, value]) => Boolean(name) && Boolean(value))
+  );
+}
+
+function normalizeRootThemeState(rootThemeState?: RootThemeState): NormalizedRootThemeState {
   return {
-    mode: 'class',
-    classNames: {
-      auto: getNonEmptyString(options?.classNames?.auto, AUTO_CLASS),
-      dark: getNonEmptyString(options?.classNames?.dark, DARK_CLASS),
-      light: options?.classNames?.light?.trim() ? options.classNames.light : undefined
+    classNames: normalizeClassNames(rootThemeState?.classNames),
+    attributes: normalizeAttributes(rootThemeState?.attributes)
+  };
+}
+
+function mergeRootThemeState(
+  base: NormalizedRootThemeState,
+  override?: RootThemeState
+): NormalizedRootThemeState {
+  if (!override) {
+    return base;
+  }
+
+  return normalizeRootThemeState({
+    classNames: override.classNames ?? base.classNames,
+    attributes: override.attributes ?? base.attributes
+  });
+}
+
+export function normalizeThemeConfig(config?: ThemeConfig): NormalizedThemeConfig {
+  const defaultRootThemes = DEFAULT_THEME_CONFIG.rootThemes!;
+
+  return {
+    storageKey: config?.storageKey?.trim() || STORAGE_KEY,
+    changeEventName: config?.changeEventName?.trim() || CHANGE_EVENT,
+    serverFallback: config?.serverFallback ?? DEFAULT_THEME_CONFIG.serverFallback!,
+    rootThemes: {
+      auto: mergeRootThemeState(normalizeRootThemeState(defaultRootThemes.auto), config?.rootThemes?.auto),
+      light: mergeRootThemeState(normalizeRootThemeState(defaultRootThemes.light), config?.rootThemes?.light),
+      dark: mergeRootThemeState(normalizeRootThemeState(defaultRootThemes.dark), config?.rootThemes?.dark)
     }
   };
 }
 
-/**
- * Checks whether a value is a valid theme preference.
- *
- * Use this when working with unknown or untrusted values, such as values read
- * from localStorage, URL parameters, forms, or external configuration.
- *
- * @param value - The value to check.
- * @returns `true` when the value is a valid member of the `ThemePreference` type
- */
+function getAllConfiguredClassNames(config: NormalizedThemeConfig) {
+  return Array.from(
+    new Set([
+      ...config.rootThemes.auto.classNames,
+      ...config.rootThemes.light.classNames,
+      ...config.rootThemes.dark.classNames
+    ])
+  );
+}
+
+function getAllConfiguredAttributeNames(config: NormalizedThemeConfig) {
+  return Array.from(
+    new Set([
+      ...Object.keys(config.rootThemes.auto.attributes),
+      ...Object.keys(config.rootThemes.light.attributes),
+      ...Object.keys(config.rootThemes.dark.attributes)
+    ])
+  );
+}
+
+function getRootThemeStateForPreference(
+  preference: ThemePreference,
+  config: NormalizedThemeConfig
+): NormalizedRootThemeState {
+  return config.rootThemes[preference];
+}
+
 export function isValidThemePreference(value: unknown): value is ThemePreference {
   return value === 'auto' || value === 'dark' || value === 'light';
 }
 
-/**
- * Safe storage function that fails silently if localStorage isn't available.
- */
-export function safelyGetStoredTheme(): string | null {
+export function safelyGetStoredTheme(config: NormalizedThemeConfig): string | null {
   try {
-    return window.localStorage.getItem(STORAGE_KEY);
+    return window.localStorage.getItem(config.storageKey);
   } catch {
     return null;
   }
 }
 
-/**
- * Safe storage function that fails silently if localStorage isn't available.
- */
-export function safelySetStoredTheme(theme: ThemePreference): boolean {
+export function safelySetStoredTheme(
+  theme: ThemePreference,
+  config: NormalizedThemeConfig
+): boolean {
   currentThemePreference = theme;
 
   try {
-    window.localStorage.setItem(STORAGE_KEY, theme);
+    window.localStorage.setItem(config.storageKey, theme);
     return true;
   } catch {
     return false;
@@ -97,67 +132,56 @@ export function safelySetStoredTheme(theme: ThemePreference): boolean {
 
 function rootReflectsThemePreference(
   theme: ThemePreference,
-  options: NormalizedThemeOptions
+  config: NormalizedThemeConfig
 ): boolean {
   if (typeof document === 'undefined') {
     return false;
   }
 
   const root = document.documentElement;
+  const targetState = getRootThemeStateForPreference(theme, config);
+  const allAttributeNames = getAllConfiguredAttributeNames(config);
 
-  if (options.mode === 'data-attribute') {
-    const resolvedTheme = theme === 'auto' ? getPreferredBrowserTheme() : theme;
-    return root.getAttribute(options.attributeName) === options.values[resolvedTheme];
-  }
-
-  if (theme === 'auto') {
-    return root.classList.contains(options.classNames.auto);
-  }
-
-  if (theme === 'dark') {
-    return root.classList.contains(options.classNames.dark);
-  }
-
-  if (options.classNames.light) {
-    return root.classList.contains(options.classNames.light);
-  }
-
-  return (
-    !root.classList.contains(options.classNames.auto) &&
-    !root.classList.contains(options.classNames.dark)
+  const classNamesMatch = targetState.classNames.every(className => root.classList.contains(className));
+  const attributesMatch = Object.entries(targetState.attributes).every(
+    ([name, value]) => root.getAttribute(name) === value
   );
+  const noExplicitAttributes =
+    theme !== 'auto' ||
+    allAttributeNames.every(attributeName => !root.hasAttribute(attributeName));
+
+  return classNamesMatch && attributesMatch && noExplicitAttributes;
 }
 
-export function getPreferredTheme(options?: UseThemeOptions): ThemePreference {
-  const normalizedOptions = normalizeThemeOptions(options);
-
-  // SSR safety
+export function getPreferredTheme(config: NormalizedThemeConfig): ThemePreference {
   if (typeof window === 'undefined') {
     return DEFAULT_THEME;
   }
 
-  const storedPreference = safelyGetStoredTheme();
+  const storedPreference = safelyGetStoredTheme(config);
 
   if (isValidThemePreference(storedPreference)) {
     currentThemePreference = storedPreference;
     return storedPreference;
   }
 
-  if (
-    currentThemePreference &&
-    rootReflectsThemePreference(currentThemePreference, normalizedOptions)
-  ) {
+  if (storedPreference !== null) {
+    safelySetStoredTheme(DEFAULT_THEME, config);
+    applyTheme(DEFAULT_THEME, config);
+    return DEFAULT_THEME;
+  }
+
+  if (currentThemePreference && rootReflectsThemePreference(currentThemePreference, config)) {
     return currentThemePreference;
   }
 
-  safelySetStoredTheme(DEFAULT_THEME);
-  applyTheme(DEFAULT_THEME, normalizedOptions);
+  safelySetStoredTheme(DEFAULT_THEME, config);
+  applyTheme(DEFAULT_THEME, config);
 
   return DEFAULT_THEME;
 }
 
 export function getPreferredBrowserTheme(): ResolvedTheme {
-  // SSR safety
   if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
     return 'light';
   }
@@ -165,76 +189,47 @@ export function getPreferredBrowserTheme(): ResolvedTheme {
   return window.matchMedia('(prefers-color-scheme: dark)')?.matches ? 'dark' : 'light';
 }
 
-export function getResolvedTheme(options?: UseThemeOptions): ResolvedTheme {
-  const normalizedOptions = normalizeThemeOptions(options);
-
-  if (typeof document === 'undefined') {
-    return 'light';
-  }
-
-  const root = document.documentElement;
-
-  if (normalizedOptions.mode === 'data-attribute') {
-    const themeValue = root.getAttribute(normalizedOptions.attributeName);
-
-    if (themeValue === normalizedOptions.values.dark) {
-      return 'dark';
-    }
-
-    if (themeValue === normalizedOptions.values.light) {
-      return 'light';
-    }
-
-    return 'light';
-  }
-
-  if (root.classList.contains(normalizedOptions.classNames.dark)) {
-    return 'dark';
-  }
-
-  if (normalizedOptions.classNames.light && root.classList.contains(normalizedOptions.classNames.light)) {
-    return 'light';
-  }
-
-  if (root.classList.contains(normalizedOptions.classNames.auto)) {
+export function getResolvedTheme(
+  preferredTheme: ThemePreference,
+  _config: NormalizedThemeConfig
+): ResolvedTheme {
+  if (preferredTheme === 'auto') {
     return getPreferredBrowserTheme();
   }
 
-  return 'light';
+  return preferredTheme;
 }
 
-/**
- * Applies the right classes to the root element for the theme passed
- */
-export function applyTheme(theme: ThemePreference, options?: UseThemeOptions) {
-  const normalizedOptions = normalizeThemeOptions(options);
-
-  // SSR safety
+export function applyTheme(theme: ThemePreference, config: NormalizedThemeConfig) {
   if (typeof document === 'undefined') {
     return;
   }
 
   const root = document.documentElement;
+  const targetState = getRootThemeStateForPreference(theme, config);
 
-  if (normalizedOptions.mode === 'data-attribute') {
-    const resolvedTheme = theme === 'auto' ? getPreferredBrowserTheme() : theme;
-    root.setAttribute(normalizedOptions.attributeName, normalizedOptions.values[resolvedTheme]);
-    return;
-  }
+  getAllConfiguredClassNames(config).forEach(className => {
+    root.classList.remove(className);
+  });
 
-  root.classList.toggle(normalizedOptions.classNames.auto, theme === 'auto');
-  root.classList.toggle(normalizedOptions.classNames.dark, theme === 'dark');
+  getAllConfiguredAttributeNames(config).forEach(attributeName => {
+    root.removeAttribute(attributeName);
+  });
 
-  if (normalizedOptions.classNames.light) {
-    root.classList.toggle(normalizedOptions.classNames.light, theme === 'light');
-  }
+  targetState.classNames.forEach(className => {
+    root.classList.add(className);
+  });
+
+  Object.entries(targetState.attributes).forEach(([name, value]) => {
+    root.setAttribute(name, value);
+  });
 }
 
-export function getSnapshot(options?: UseThemeOptions): ThemeSnapshot {
-  const preferredTheme = getPreferredTheme(options);
-  return `${preferredTheme}:${getResolvedTheme(options)}`;
+export function getSnapshot(config: NormalizedThemeConfig): ThemeSnapshot {
+  const preferredTheme = getPreferredTheme(config);
+  return `${preferredTheme}:${getResolvedTheme(preferredTheme, config)}`;
 }
 
-export function getServerSnapshot(): ThemeSnapshot {
-  return 'auto:light';
+export function getServerSnapshot(config: NormalizedThemeConfig): ThemeSnapshot {
+  return `${DEFAULT_THEME}:${config.serverFallback}`;
 }

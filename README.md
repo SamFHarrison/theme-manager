@@ -1,15 +1,14 @@
 # `theme-manager`
 
-`theme-manager` is a small React package for persisting and applying user theme preferences.
+`theme-manager` is a small React package for persisting and applying `auto`, `light`, and `dark` theme preferences.
 
 It supports:
 
-- `auto`, `light`, and `dark` preferences
-- persistence with `localStorage`
-- cross-tab sync via the `storage` event
-- system theme syncing via `prefers-color-scheme`
-- root class-based theming
-- root `data-*` attribute-based theming
+- app-level configuration through `ThemeProvider`
+- a single `useTheme()` hook for reading and updating theme state
+- `localStorage` persistence
+- cross-tab sync through the `storage` event
+- root classes and root attributes, mapped independently per preference
 
 ## Install
 
@@ -21,78 +20,96 @@ npm install theme-manager
 
 ## Basic usage
 
-By default, the hook uses root classes with the existing behavior in this repo:
-
-- `allow-prefers-dark` for `auto`
-- `obds-color-pref-dark` for `dark`
-- no theme class for `light`
-
 ```tsx
-import { useTheme } from 'theme-manager';
+import { ThemeProvider, useTheme } from 'theme-manager';
 
-export function ThemeToggle() {
+export function App() {
+  return (
+    <ThemeProvider>
+      <ThemeToggle />
+    </ThemeProvider>
+  );
+}
+
+function ThemeToggle() {
   const { preferredTheme, resolvedTheme, setTheme } = useTheme();
 
   return (
     <div>
       <p>Preferred: {preferredTheme}</p>
       <p>Resolved: {resolvedTheme}</p>
+      <button onClick={() => setTheme('auto')}>Auto</button>
       <button onClick={() => setTheme('light')}>Light</button>
       <button onClick={() => setTheme('dark')}>Dark</button>
-      <button onClick={() => setTheme('auto')}>Auto</button>
     </div>
   );
 }
 ```
 
-## Custom class names
+With no config:
+
+- the default preference is `auto`
+- `auto` removes any explicit theme marker from the root element
+- `light` sets `data-theme="light"` on `<html>`
+- `dark` sets `data-theme="dark"` on `<html>`
+
+## Custom root mappings
 
 ```tsx
-const theme = useTheme({
-  classNames: {
-    auto: 'theme-auto',
-    dark: 'theme-dark',
-    light: 'theme-light'
-  }
-});
+import { ThemeProvider } from 'theme-manager';
+
+<ThemeProvider
+  config={{
+    rootThemes: {
+      auto: {
+        classNames: ['allow-prefers-dark']
+      },
+      light: {
+        attributes: {
+          'data-color-mode': 'day'
+        }
+      },
+      dark: {
+        classNames: ['theme-dark'],
+        attributes: {
+          'data-color-mode': 'night'
+        }
+      }
+    }
+  }}
+>
+  <App />
+</ThemeProvider>;
 ```
 
-If `light` is omitted, light mode removes the other configured theme classes.
-
-## `data-theme` support
-
-```tsx
-const theme = useTheme({
-  mode: 'data-attribute'
-});
-```
-
-In this mode, the hook writes `data-theme="light"` or `data-theme="dark"` to the root element.
-
-## Custom attribute names and values
-
-```tsx
-const theme = useTheme({
-  mode: 'data-attribute',
-  attributeName: 'data-color-mode',
-  values: {
-    light: 'day',
-    dark: 'night'
-  }
-});
-```
-
-## API
+## Advanced config
 
 ```ts
-type ThemePreference = 'auto' | 'dark' | 'light';
-type ResolvedTheme = 'dark' | 'light';
+type RootThemeState = {
+  classNames?: string[];
+  attributes?: Record<string, string>;
+};
 
-function useTheme(options?: UseThemeOptions): {
-  preferredTheme: ThemePreference;
-  resolvedTheme: ResolvedTheme;
-  setTheme: (theme: ThemePreference) => void;
+type ThemeConfig = {
+  storageKey?: string;
+  changeEventName?: string;
+  serverFallback?: 'light' | 'dark';
+  rootThemes?: {
+    auto?: RootThemeState;
+    light?: RootThemeState;
+    dark?: RootThemeState;
+  };
 };
 ```
 
-The package also exports `isValidThemePreference`.
+`storageKey` and `changeEventName` are optional. Override them when:
+
+- multiple apps on the same origin use `theme-manager`
+- multiple `theme-manager` instances can run on the same page
+- you need isolated theme persistence or event channels under one domain
+
+## SSR note
+
+`useTheme()` is a client-only hook.
+
+In SSR frameworks, use `ThemeProvider` in a client boundary. This package does not currently include a bootstrap script, so SSR apps may briefly render the fallback theme before hydration. `serverFallback` only controls the server snapshot used before the client takes over.
