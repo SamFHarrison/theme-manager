@@ -82,6 +82,26 @@ import { ThemeProvider } from 'theme-manager';
 </ThemeProvider>;
 ```
 
+When a preference is configured, that preference replaces the built-in default for that preference.
+
+For example:
+
+```tsx
+<ThemeProvider
+  config={{
+    rootThemes: {
+      dark: {
+        classNames: ['dark-class']
+      }
+    }
+  }}
+>
+  <App />
+</ThemeProvider>
+```
+
+In that case, `dark` uses only `dark-class`. The package will not also add the default `data-theme="dark"` attribute unless you explicitly configure it.
+
 ## Advanced config
 
 ```ts
@@ -101,6 +121,12 @@ type ThemeConfig = {
   };
 };
 ```
+
+Root theme semantics:
+
+- omit a preference entirely to keep the package default for that preference
+- provide a preference to fully replace the package default for that preference
+- if you want both classes and attributes, specify both explicitly
 
 `storageKey` and `changeEventName` are optional. Override them when:
 

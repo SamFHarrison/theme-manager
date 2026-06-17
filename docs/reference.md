@@ -55,6 +55,16 @@ Without config:
 - `changeEventName` defaults to `theme-manager-theme-change`
 - `serverFallback` defaults to `light`
 
+## Preference replacement semantics
+
+Each configured `rootThemes` preference replaces the built-in default for that preference.
+
+Examples:
+
+- omit `dark` to keep the default `data-theme="dark"` behavior
+- set `dark: { classNames: ['dark-class'] }` to use only `dark-class`
+- set both `classNames` and `attributes` if you explicitly want both markers applied
+
 ## SSR
 
 `useTheme()` is client-only. Server components cannot call it.

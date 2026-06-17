@@ -246,6 +246,27 @@ describe('useTheme', () => {
     expect(getRoot().classList.contains('theme-auto')).toBe(false);
   });
 
+  it('treats a configured preference as a full replacement for its defaults', async () => {
+    const { result } = await renderUseTheme({
+      rootThemes: {
+        dark: {
+          classNames: ['dark-class']
+        }
+      }
+    });
+
+    await updateExternalStore(() => {
+      result.current.setTheme('dark');
+    });
+
+    await waitFor(() => {
+      expect(result.current.resolvedTheme).toBe('dark');
+    });
+
+    expect(getRoot().classList.contains('dark-class')).toBe(true);
+    expect(getRoot().hasAttribute(DATA_THEME_ATTRIBUTE)).toBe(false);
+  });
+
   it('supports mixed class and attribute mappings', async () => {
     const { result } = await renderUseTheme({
       rootThemes: {

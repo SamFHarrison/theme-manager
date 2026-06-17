@@ -6,7 +6,11 @@
 import { ThemeProvider } from "theme-manager";
 
 export function App() {
-  return <ThemeProvider>{/* app */}</ThemeProvider>;
+  return (
+    <ThemeProvider>
+      <Page>
+    </ThemeProvider>
+  );
 }
 ```
 
@@ -57,3 +61,5 @@ function ThemeSettings() {
   );
 }
 ```
+
+If you later customize `rootThemes`, remember that any configured preference fully replaces its default marker behavior for that preference.

@@ -48,20 +48,6 @@ function normalizeRootThemeState(rootThemeState?: RootThemeState): NormalizedRoo
   };
 }
 
-function mergeRootThemeState(
-  base: NormalizedRootThemeState,
-  override?: RootThemeState
-): NormalizedRootThemeState {
-  if (!override) {
-    return base;
-  }
-
-  return normalizeRootThemeState({
-    classNames: override.classNames ?? base.classNames,
-    attributes: override.attributes ?? base.attributes
-  });
-}
-
 export function normalizeThemeConfig(config?: ThemeConfig): NormalizedThemeConfig {
   const defaultRootThemes = DEFAULT_THEME_CONFIG.rootThemes!;
 
@@ -70,9 +56,15 @@ export function normalizeThemeConfig(config?: ThemeConfig): NormalizedThemeConfi
     changeEventName: config?.changeEventName?.trim() || CHANGE_EVENT,
     serverFallback: config?.serverFallback ?? DEFAULT_THEME_CONFIG.serverFallback!,
     rootThemes: {
-      auto: mergeRootThemeState(normalizeRootThemeState(defaultRootThemes.auto), config?.rootThemes?.auto),
-      light: mergeRootThemeState(normalizeRootThemeState(defaultRootThemes.light), config?.rootThemes?.light),
-      dark: mergeRootThemeState(normalizeRootThemeState(defaultRootThemes.dark), config?.rootThemes?.dark)
+      auto: config?.rootThemes?.auto
+        ? normalizeRootThemeState(config.rootThemes.auto)
+        : normalizeRootThemeState(defaultRootThemes.auto),
+      light: config?.rootThemes?.light
+        ? normalizeRootThemeState(config.rootThemes.light)
+        : normalizeRootThemeState(defaultRootThemes.light),
+      dark: config?.rootThemes?.dark
+        ? normalizeRootThemeState(config.rootThemes.dark)
+        : normalizeRootThemeState(defaultRootThemes.dark)
     }
   };
 }

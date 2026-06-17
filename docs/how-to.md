@@ -57,6 +57,8 @@ function ThemeToggle() {
 </ThemeProvider>
 ```
 
+Configured preferences replace their defaults. If you provide only a class for `dark`, the package will not also apply the default `data-theme="dark"` marker.
+
 ## Override storage and event names
 
 Override `storageKey` and `changeEventName` when multiple apps on the same origin need isolation.
