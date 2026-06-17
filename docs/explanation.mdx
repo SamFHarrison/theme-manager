@@ -7,7 +7,7 @@ import { Meta } from '@storybook/addon-docs/blocks';
 The `useTheme()` hook provides a small theme-management layer for React applications. It connects three sources of theme information:
 
 - the user's saved preference in `localStorage`,
-- the classes applied to the root `<html>` element,
+- the theme marker applied to the root `<html>` element,
 - the browser or operating system `prefers-color-scheme` setting.
 
 The hook returns both the user's preference and the theme that is currently resolved from that preference.
@@ -36,11 +36,11 @@ The distinction matters because `auto` is not a visual theme. It means "follow t
 
 For example, if the preferred theme is `auto` and the user's system preference is dark, the resolved theme is `dark`. If the system preference is light, the resolved theme is `light`.
 
-## Why the root element classes are the source of truth
+## Why the root element is the source of truth
 
-The hook resolves the active theme by looking at classes on `document.documentElement`, which is the root `<html>` element.
+The hook resolves the active theme by looking at the marker on `document.documentElement`, which is the root `<html>` element.
 
-The class rules are:
+In the default class mode, the rules are:
 
 | Root class state               | Meaning                    |
 | ------------------------------ | -------------------------- |
@@ -48,9 +48,11 @@ The class rules are:
 | `.allow-prefers-dark` exists   | Use `prefers-color-scheme` |
 | neither class exists           | Use light mode             |
 
-The hook intentionally treats the root classes as the source of truth for the current rendered theme. This is useful because CSS and design-system styles usually respond to those classes directly.
+In attribute mode, the root element is instead updated with an attribute such as `data-theme="dark"` or `data-theme="light"`.
 
-It also means the hook remains accurate if something outside React changes the root classes. For example, an inline bootstrap script, legacy code, a test helper, or another part of the app can update the root classes and the hook will still reflect the actual theme being applied.
+The hook intentionally treats the root marker as the source of truth for the current rendered theme. This is useful because CSS and design-system styles usually respond to that root state directly.
+
+It also means the hook remains accurate if something outside React changes the root marker. For example, an inline bootstrap script, legacy code, a test helper, or another part of the app can update the root state and the hook will still reflect the actual theme being applied.
 
 ## How the default works
 
@@ -63,7 +65,7 @@ The default behaviour is:
 1. Try to read `hbo-theme-preference` from `localStorage`.
 2. If the value is `auto`, `dark`, or `light`, use it.
 3. If the value is missing or invalid, save `auto`.
-4. Apply the `.allow-prefers-dark` class to the root element.
+4. Apply the default root theme marker.
 5. Resolve the actual theme from `prefers-color-scheme`.
 
 ## Why `useSyncExternalStore` is used
@@ -83,7 +85,7 @@ The hook subscribes to:
 - the native `storage` event, for changes from other tabs or windows,
 - a custom `hbo-theme-preference-change` event, for changes made in the current tab,
 - the `prefers-color-scheme` media query, for system theme changes,
-- a `MutationObserver`, for root class changes.
+- a `MutationObserver`, for root marker changes.
 
 ## Why the snapshot is a string
 
@@ -127,7 +129,7 @@ When the theme is changed in another tab, the browser's native `storage` event f
 
 When the system colour scheme changes, the `prefers-color-scheme` media query fires a `change` event. This matters when the preference is `auto`.
 
-When something outside the hook changes the root classes, the `MutationObserver` sees the class mutation and asks React to re-read the snapshot.
+When something outside the hook changes the root marker, the `MutationObserver` sees the mutation and asks React to re-read the snapshot.
 
 `localStorage` was a conscious decision to enable this multi-session and multi-tab consistency that `sessionStorage` wouldn't allow us to do.
 

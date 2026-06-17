@@ -1,35 +1,55 @@
-import { useCallback, useLayoutEffect, useSyncExternalStore } from 'react';
+import { useCallback, useLayoutEffect, useMemo, useSyncExternalStore } from 'react';
 
 import { CHANGE_EVENT } from './constants';
-import { ResolvedTheme, ThemePreference, UseThemeReturn } from './types';
-import { applyTheme, getServerSnapshot, getSnapshot, safelySetStoredTheme } from './useTheme.utils';
+import { ResolvedTheme, ThemePreference, UseThemeOptions, UseThemeReturn } from './types';
+import {
+  applyTheme,
+  getPreferredTheme,
+  getServerSnapshot,
+  getSnapshot,
+  normalizeThemeOptions,
+  safelySetStoredTheme
+} from './useTheme.utils';
 
 /**
  * Subscribes React to every external source that can affect the
  * theme snapshot - local storage, root element classes, and browser media.
  */
-function subscribe(callback: () => void) {
+function subscribe(callback: () => void, options?: UseThemeOptions) {
   if (typeof window === 'undefined' || typeof document === 'undefined') {
     return () => {};
   }
 
-  const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+  const normalizedOptions = normalizeThemeOptions(options);
+  const mediaQuery =
+    typeof window.matchMedia === 'function'
+      ? window.matchMedia('(prefers-color-scheme: dark)')
+      : null;
+  const handleStorage = () => callback();
+  const handleThemeChange = () => callback();
+  const handleMediaChange = () => {
+    if (normalizedOptions.mode === 'data-attribute') {
+      applyTheme(getPreferredTheme(normalizedOptions), normalizedOptions);
+    }
 
-  window.addEventListener('storage', () => callback()); // Keeps different browser tabs/windows in sync
-  window.addEventListener(CHANGE_EVENT, () => callback()); // Keeps the current tab in sync
-  mediaQuery.addEventListener('change', () => callback()); // Keeps `resolvedTheme` up to date when user changes system prefs
+    callback();
+  };
 
-  // Watch the root element for class changes.
+  window.addEventListener('storage', handleStorage); // Keeps different browser tabs/windows in sync
+  window.addEventListener(CHANGE_EVENT, handleThemeChange); // Keeps the current tab in sync
+  mediaQuery?.addEventListener('change', handleMediaChange); // Keeps `resolvedTheme` up to date when user changes system prefs
+
+  // Watch the root element for external theme mutations.
   const observer = new MutationObserver(() => callback());
   observer.observe(document.documentElement, {
     attributes: true,
-    attributeFilter: ['class']
+    attributeFilter: [normalizedOptions.mode === 'data-attribute' ? normalizedOptions.attributeName : 'class']
   });
 
   return () => {
-    window.removeEventListener('storage', () => callback());
-    window.removeEventListener(CHANGE_EVENT, () => callback());
-    mediaQuery.removeEventListener('change', () => callback());
+    window.removeEventListener('storage', handleStorage);
+    window.removeEventListener(CHANGE_EVENT, handleThemeChange);
+    mediaQuery?.removeEventListener('change', handleMediaChange);
     observer.disconnect();
   };
 }
@@ -53,15 +73,21 @@ function subscribe(callback: () => void) {
  * );
  * ```
  */
-export function useTheme(): UseThemeReturn {
-  const snapshot = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+export function useTheme(options?: UseThemeOptions): UseThemeReturn {
+  const normalizedOptions = useMemo(() => normalizeThemeOptions(options), [options]);
+
+  const snapshot = useSyncExternalStore(
+    useCallback(callback => subscribe(callback, normalizedOptions), [normalizedOptions]),
+    useCallback(() => getSnapshot(normalizedOptions), [normalizedOptions]),
+    getServerSnapshot
+  );
   const [preferredTheme, resolvedTheme] = snapshot.split(':') as [ThemePreference, ResolvedTheme];
 
   // Reapply the saved preference after refresh, because localStorage persists
   // but root classes do not. Layout effect also reduces chance of wrong theme flash.
   useLayoutEffect(() => {
-    applyTheme(preferredTheme);
-  }, [preferredTheme]);
+    applyTheme(preferredTheme, normalizedOptions);
+  }, [normalizedOptions, preferredTheme]);
 
   const setTheme = useCallback((theme: ThemePreference) => {
     // SSR safety
@@ -71,9 +97,9 @@ export function useTheme(): UseThemeReturn {
     }
 
     safelySetStoredTheme(theme);
-    applyTheme(theme);
+    applyTheme(theme, normalizedOptions);
     window.dispatchEvent(new Event(CHANGE_EVENT));
-  }, []);
+  }, [normalizedOptions]);
 
   return {
     preferredTheme,

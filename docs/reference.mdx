@@ -10,9 +10,9 @@ import { Meta } from '@storybook/addon-docs/blocks';
 const { preferredTheme, resolvedTheme, setTheme } = useTheme();
 ```
 
-It stores the user's preference in `localStorage`, applies theme classes to the root `<html>` element, and keeps React components updated when theme-related external state changes.
+It stores the user's preference in `localStorage`, applies theme markers to the root `<html>` element, and keeps React components updated when theme-related external state changes.
 
-### Root class behaviour
+### Default root class behaviour
 
 | Preference | Root class result                                           | Resolved behaviour          |
 | ---------- | ----------------------------------------------------------- | --------------------------- |
@@ -30,12 +30,14 @@ It stores the user's preference in `localStorage`, applies theme classes to the 
 
 This means `.obds-color-pref-dark` wins if both classes are somehow present.
 
+In `data-attribute` mode, the hook instead reads a root attribute such as `data-theme="dark"` or `data-theme="light"`.
+
 ## Public API
 
 ### `useTheme()`
 
 ```ts
-function useTheme(): {
+function useTheme(options?: UseThemeOptions): {
   preferredTheme: ThemePreference;
   resolvedTheme: ResolvedTheme;
   setTheme: (theme: ThemePreference) => void;
@@ -43,6 +45,28 @@ function useTheme(): {
 ```
 
 Returns the user's saved theme preference, the active resolved theme, and a function for changing the theme preference.
+
+### `UseThemeOptions`
+
+```ts
+type UseThemeOptions =
+  | {
+      mode?: 'class';
+      classNames?: {
+        auto?: string;
+        dark?: string;
+        light?: string;
+      };
+    }
+  | {
+      mode: 'data-attribute';
+      attributeName?: string;
+      values?: {
+        light?: string;
+        dark?: string;
+      };
+    };
+```
 
 ### Return value
 

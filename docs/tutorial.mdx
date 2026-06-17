@@ -24,9 +24,9 @@ You need:
 
 - a React application,
 - the `useTheme()` hook available in your codebase,
-- CSS or a design system that responds to the root theme classes.
+- CSS or a design system that responds to the root theme markers.
 
-The hook uses these root classes:
+By default, the hook uses these root classes:
 
 ```txt
 allow-prefers-dark
@@ -43,7 +43,11 @@ Import the hook:
 import { useTheme } from './useTheme';
 ```
 
-Adjust the import path to match your project structure.
+If you publish this package, the import becomes:
+
+```tsx
+import { useTheme } from 'theme-manager';
+```
 
 ## Step 2: Read theme state from the hook
 

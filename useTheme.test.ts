@@ -1,6 +1,12 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 
-import { AUTO_CLASS, CHANGE_EVENT, DARK_CLASS, STORAGE_KEY } from './constants';
+import {
+  AUTO_CLASS,
+  CHANGE_EVENT,
+  DARK_CLASS,
+  DATA_THEME_ATTRIBUTE,
+  STORAGE_KEY
+} from './constants';
 import { useTheme } from './useTheme';
 import {
   flushMicrotasks,
@@ -14,8 +20,8 @@ import {
   updateExternalStore
 } from './useTheme.test.util';
 
-const renderUseTheme = async () => {
-  const view = renderHook(() => useTheme());
+const renderUseTheme = async (...args: Parameters<typeof useTheme>) => {
+  const view = renderHook(() => useTheme(...args));
 
   await act(async () => {
     await flushMicrotasks();
@@ -32,6 +38,8 @@ const expectRootClasses = ({ auto = false, dark = false }) => {
 beforeEach(() => {
   window.localStorage.clear();
   document.documentElement.className = '';
+  document.documentElement.removeAttribute(DATA_THEME_ATTRIBUTE);
+  document.documentElement.removeAttribute('data-color-mode');
   resetMockPrefersColorScheme();
   mockPrefersColorScheme();
 });
@@ -40,6 +48,8 @@ afterEach(() => {
   vi.restoreAllMocks();
   window.localStorage.clear();
   document.documentElement.className = '';
+  document.documentElement.removeAttribute(DATA_THEME_ATTRIBUTE);
+  document.documentElement.removeAttribute('data-color-mode');
   resetMockPrefersColorScheme();
 });
 
@@ -428,5 +438,94 @@ describe('useTheme', () => {
 
     expect(removeWindowListenerSpy).toHaveBeenCalledWith('storage', expect.any(Function));
     expect(removeWindowListenerSpy).toHaveBeenCalledWith(CHANGE_EVENT, expect.any(Function));
+  });
+
+  it('supports custom class names', async () => {
+    const { result } = await renderUseTheme({
+      classNames: {
+        auto: 'theme-auto',
+        dark: 'theme-dark',
+        light: 'theme-light'
+      }
+    });
+
+    await waitFor(() => {
+      expect(result.current.preferredTheme).toBe('auto');
+      expect(result.current.resolvedTheme).toBe('light');
+    });
+
+    expect(getRoot().classList.contains('theme-auto')).toBe(true);
+
+    await updateExternalStore(() => {
+      result.current.setTheme('dark');
+    });
+
+    await waitFor(() => {
+      expect(result.current.resolvedTheme).toBe('dark');
+    });
+
+    expect(getRoot().classList.contains('theme-dark')).toBe(true);
+    expect(getRoot().classList.contains('theme-auto')).toBe(false);
+
+    await updateExternalStore(() => {
+      result.current.setTheme('light');
+    });
+
+    await waitFor(() => {
+      expect(result.current.resolvedTheme).toBe('light');
+    });
+
+    expect(getRoot().classList.contains('theme-light')).toBe(true);
+  });
+
+  it('supports data-theme attributes on the root element', async () => {
+    systemPreference.prefersDark = true;
+
+    const { result } = await renderUseTheme({
+      mode: 'data-attribute'
+    });
+
+    await waitFor(() => {
+      expect(result.current.preferredTheme).toBe('auto');
+      expect(result.current.resolvedTheme).toBe('dark');
+    });
+
+    expect(getRoot().getAttribute(DATA_THEME_ATTRIBUTE)).toBe('dark');
+
+    await setMockSystemPrefersDark(false);
+
+    await waitFor(() => {
+      expect(result.current.resolvedTheme).toBe('light');
+    });
+
+    expect(getRoot().getAttribute(DATA_THEME_ATTRIBUTE)).toBe('light');
+  });
+
+  it('supports custom data attribute names and values', async () => {
+    const { result } = await renderUseTheme({
+      mode: 'data-attribute',
+      attributeName: 'data-color-mode',
+      values: {
+        dark: 'night',
+        light: 'day'
+      }
+    });
+
+    await waitFor(() => {
+      expect(result.current.preferredTheme).toBe('auto');
+      expect(result.current.resolvedTheme).toBe('light');
+    });
+
+    expect(getRoot().getAttribute('data-color-mode')).toBe('day');
+
+    await updateExternalStore(() => {
+      result.current.setTheme('dark');
+    });
+
+    await waitFor(() => {
+      expect(result.current.resolvedTheme).toBe('dark');
+    });
+
+    expect(getRoot().getAttribute('data-color-mode')).toBe('night');
   });
 });

@@ -11,7 +11,7 @@ This guide shows how to use the `useTheme()` hook in common situations.
 If all you want to do is support dark mode in your SPA, just import it and add it in your `App.tsx` file
 
 ```tsx
-import { useTheme } from '@hbo/react-hooks';
+import { useTheme } from 'theme-manager';
 
 export default function App() {
   useTheme();
@@ -22,14 +22,14 @@ export default function App() {
 }
 ```
 
-This will make your SPA respect the user's system preferences, via the `prefer-color-scheme` media feature, and manage the adding and removing of classes on the root element as required by our design system.
+This will make your SPA respect the user's system preferences, via the `prefer-color-scheme` media feature, and manage the adding and removing of theme markers on the root element.
 
 ## Change the theme
 
 Use `setTheme()` to update the saved preference and root classes. This example uses our `<Select />` component from `@hbo/react-components`.
 
 ```tsx
-import { isValidThemePreference, useTheme } from '@hbo/react-hooks';
+import { isValidThemePreference, useTheme } from 'theme-manager';
 
 export default function Page() {
   const { preferredTheme, setTheme } = useTheme();
@@ -51,6 +51,33 @@ export default function Page() {
     />
   );
 }
+```
+
+## Use your own design system markers
+
+If your design system uses different root class names, pass them into the hook.
+
+```tsx
+const theme = useTheme({
+  classNames: {
+    auto: 'theme-auto',
+    dark: 'theme-dark',
+    light: 'theme-light'
+  }
+});
+```
+
+If your design system uses a root attribute instead of classes, switch the hook to `data-attribute` mode.
+
+```tsx
+const theme = useTheme({
+  mode: 'data-attribute',
+  attributeName: 'data-color-mode',
+  values: {
+    light: 'day',
+    dark: 'night'
+  }
+});
 ```
 
 ## Apply theme-specific component behaviour
