@@ -1,0 +1,81 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+<Meta title="React Hooks/useTheme/Reference" />
+
+# `useTheme()`: Reference
+
+`useTheme()` is a React hook for reading and updating the user's theme preference.
+
+```ts
+const { preferredTheme, resolvedTheme, setTheme } = useTheme();
+```
+
+It stores the user's preference in `localStorage`, applies theme classes to the root `<html>` element, and keeps React components updated when theme-related external state changes.
+
+### Root class behaviour
+
+| Preference | Root class result                                           | Resolved behaviour          |
+| ---------- | ----------------------------------------------------------- | --------------------------- |
+| `auto`     | Adds `.allow-prefers-dark`, removes `.obds-color-pref-dark` | Uses `prefers-color-scheme` |
+| `dark`     | Adds `.obds-color-pref-dark`, removes `.allow-prefers-dark` | Resolves to `dark`          |
+| `light`    | Removes both classes                                        | Resolves to `light`         |
+
+### Resolution algorithm
+
+`resolvedTheme` is calculated using this order of authority:
+
+1. If the root element contains `.obds-color-pref-dark`, return `dark`.
+2. If the root element contains `.allow-prefers-dark`, return `dark` when `prefers-color-scheme: dark` matches; otherwise return `light`.
+3. Otherwise, return `light`.
+
+This means `.obds-color-pref-dark` wins if both classes are somehow present.
+
+## Public API
+
+### `useTheme()`
+
+```ts
+function useTheme(): {
+  preferredTheme: ThemePreference;
+  resolvedTheme: ResolvedTheme;
+  setTheme: (theme: ThemePreference) => void;
+};
+```
+
+Returns the user's saved theme preference, the active resolved theme, and a function for changing the theme preference.
+
+### Return value
+
+| Property         | Type                               | Description                               |
+| ---------------- | ---------------------------------- | ----------------------------------------- |
+| `preferredTheme` | `ThemePreference`                  | The user's stored preference.             |
+| `resolvedTheme`  | `ResolvedTheme`                    | The actual active theme.                  |
+| `setTheme`       | `(theme: ThemePreference) => void` | Saves and applies a new theme preference. |
+
+## Types
+
+### `ThemePreference`
+
+```ts
+type ThemePreference = 'auto' | 'dark' | 'light';
+```
+
+### `ResolvedTheme`
+
+```ts
+type ResolvedTheme = 'dark' | 'light';
+```
+
+Represents the theme currently in effect.
+
+`auto` is not a resolved theme because it must resolve to either `dark` or `light`.
+
+## Helpers
+
+### `isValidThemePreference(value)`
+
+```ts
+function isValidThemePreference(value: string | null): value is ThemePreference;
+```
+
+Checks whether a stored string is a valid theme preference. Use this when working with unknown or untrusted values, such as values read from localStorage, URL parameters, forms, or external configuration.

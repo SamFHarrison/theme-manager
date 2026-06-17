@@ -1,0 +1,71 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+<Meta title="React Hooks/useTheme/How-To Guide" />
+
+# `useTheme()`: How-To Guide
+
+This guide shows how to use the `useTheme()` hook in common situations.
+
+## Getting Started
+
+If all you want to do is support dark mode in your SPA, just import it and add it in your `App.tsx` file
+
+```tsx
+import { useTheme } from '@hbo/react-hooks';
+
+export default function App() {
+  useTheme();
+
+  return (
+    // ...
+  )
+}
+```
+
+This will make your SPA respect the user's system preferences, via the `prefer-color-scheme` media feature, and manage the adding and removing of classes on the root element as required by our design system.
+
+## Change the theme
+
+Use `setTheme()` to update the saved preference and root classes. This example uses our `<Select />` component from `@hbo/react-components`.
+
+```tsx
+import { isValidThemePreference, useTheme } from '@hbo/react-hooks';
+
+export default function Page() {
+  const { preferredTheme, setTheme } = useTheme();
+
+  return (
+    <Select
+      label="Choose theme"
+      value={preferredTheme}
+      options={[
+        { value: 'auto', label: 'auto' },
+        { value: 'light', label: 'light' },
+        { value: 'dark', label: 'dark' }
+      ]}
+      onChange={option => {
+        if (isValidThemePreference(option?.value)) {
+          setTheme(option?.value);
+        }
+      }}
+    />
+  );
+}
+```
+
+## Apply theme-specific component behaviour
+
+Use `resolvedTheme` when the component needs to know the actual active theme.
+
+```tsx
+function ThemedImage() {
+  const { resolvedTheme } = useTheme();
+
+  return (
+    <img
+      src={resolvedTheme === 'dark' ? '/image-dark.png' : '/image-light.png'}
+      alt="Decorative themed illustration"
+    />
+  );
+}
+```
