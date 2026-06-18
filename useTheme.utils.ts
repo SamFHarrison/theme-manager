@@ -1,11 +1,16 @@
-import { CHANGE_EVENT, DEFAULT_THEME, DEFAULT_THEME_CONFIG, STORAGE_KEY } from './constants';
+import {
+  CHANGE_EVENT,
+  DEFAULT_THEME,
+  DEFAULT_THEME_CONFIG,
+  STORAGE_KEY,
+} from "./constants";
 import {
   ResolvedTheme,
   RootThemeState,
   ThemeConfig,
   ThemePreference,
-  ThemeSnapshot
-} from './types';
+  ThemeSnapshot,
+} from "./types";
 
 type NormalizedRootThemeState = {
   classNames: string[];
@@ -26,7 +31,7 @@ export type NormalizedThemeConfig = {
 let currentThemePreference: ThemePreference | null = null;
 
 function normalizeClassNames(classNames?: string[]) {
-  return (classNames ?? []).map(name => name.trim()).filter(Boolean);
+  return (classNames ?? []).map((name) => name.trim()).filter(Boolean);
 }
 
 function normalizeAttributes(attributes?: Record<string, string>) {
@@ -37,24 +42,29 @@ function normalizeAttributes(attributes?: Record<string, string>) {
   return Object.fromEntries(
     Object.entries(attributes)
       .map(([name, value]) => [name.trim(), value.trim()] as const)
-      .filter(([name, value]) => Boolean(name) && Boolean(value))
+      .filter(([name, value]) => Boolean(name) && Boolean(value)),
   );
 }
 
-function normalizeRootThemeState(rootThemeState?: RootThemeState): NormalizedRootThemeState {
+function normalizeRootThemeState(
+  rootThemeState?: RootThemeState,
+): NormalizedRootThemeState {
   return {
     classNames: normalizeClassNames(rootThemeState?.classNames),
-    attributes: normalizeAttributes(rootThemeState?.attributes)
+    attributes: normalizeAttributes(rootThemeState?.attributes),
   };
 }
 
-export function normalizeThemeConfig(config?: ThemeConfig): NormalizedThemeConfig {
+export function normalizeThemeConfig(
+  config?: ThemeConfig,
+): NormalizedThemeConfig {
   const defaultRootThemes = DEFAULT_THEME_CONFIG.rootThemes!;
 
   return {
     storageKey: config?.storageKey?.trim() || STORAGE_KEY,
     changeEventName: config?.changeEventName?.trim() || CHANGE_EVENT,
-    serverFallback: config?.serverFallback ?? DEFAULT_THEME_CONFIG.serverFallback!,
+    serverFallback:
+      config?.serverFallback ?? DEFAULT_THEME_CONFIG.serverFallback!,
     rootThemes: {
       auto: config?.rootThemes?.auto
         ? normalizeRootThemeState(config.rootThemes.auto)
@@ -64,8 +74,8 @@ export function normalizeThemeConfig(config?: ThemeConfig): NormalizedThemeConfi
         : normalizeRootThemeState(defaultRootThemes.light),
       dark: config?.rootThemes?.dark
         ? normalizeRootThemeState(config.rootThemes.dark)
-        : normalizeRootThemeState(defaultRootThemes.dark)
-    }
+        : normalizeRootThemeState(defaultRootThemes.dark),
+    },
   };
 }
 
@@ -74,8 +84,8 @@ function getAllConfiguredClassNames(config: NormalizedThemeConfig) {
     new Set([
       ...config.rootThemes.auto.classNames,
       ...config.rootThemes.light.classNames,
-      ...config.rootThemes.dark.classNames
-    ])
+      ...config.rootThemes.dark.classNames,
+    ]),
   );
 }
 
@@ -84,23 +94,27 @@ function getAllConfiguredAttributeNames(config: NormalizedThemeConfig) {
     new Set([
       ...Object.keys(config.rootThemes.auto.attributes),
       ...Object.keys(config.rootThemes.light.attributes),
-      ...Object.keys(config.rootThemes.dark.attributes)
-    ])
+      ...Object.keys(config.rootThemes.dark.attributes),
+    ]),
   );
 }
 
 function getRootThemeStateForPreference(
   preference: ThemePreference,
-  config: NormalizedThemeConfig
+  config: NormalizedThemeConfig,
 ): NormalizedRootThemeState {
   return config.rootThemes[preference];
 }
 
-export function isValidThemePreference(value: unknown): value is ThemePreference {
-  return value === 'auto' || value === 'dark' || value === 'light';
+export function isValidThemePreference(
+  value: unknown,
+): value is ThemePreference {
+  return value === "auto" || value === "dark" || value === "light";
 }
 
-export function safelyGetStoredTheme(config: NormalizedThemeConfig): string | null {
+export function safelyGetStoredTheme(
+  config: NormalizedThemeConfig,
+): string | null {
   try {
     return window.localStorage.getItem(config.storageKey);
   } catch {
@@ -110,7 +124,7 @@ export function safelyGetStoredTheme(config: NormalizedThemeConfig): string | nu
 
 export function safelySetStoredTheme(
   theme: ThemePreference,
-  config: NormalizedThemeConfig
+  config: NormalizedThemeConfig,
 ): boolean {
   currentThemePreference = theme;
 
@@ -124,9 +138,9 @@ export function safelySetStoredTheme(
 
 function rootReflectsThemePreference(
   theme: ThemePreference,
-  config: NormalizedThemeConfig
+  config: NormalizedThemeConfig,
 ): boolean {
-  if (typeof document === 'undefined') {
+  if (typeof document === "undefined") {
     return false;
   }
 
@@ -134,19 +148,25 @@ function rootReflectsThemePreference(
   const targetState = getRootThemeStateForPreference(theme, config);
   const allAttributeNames = getAllConfiguredAttributeNames(config);
 
-  const classNamesMatch = targetState.classNames.every(className => root.classList.contains(className));
+  const classNamesMatch = targetState.classNames.every((className) =>
+    root.classList.contains(className),
+  );
   const attributesMatch = Object.entries(targetState.attributes).every(
-    ([name, value]) => root.getAttribute(name) === value
+    ([name, value]) => root.getAttribute(name) === value,
   );
   const noExplicitAttributes =
-    theme !== 'auto' ||
-    allAttributeNames.every(attributeName => !root.hasAttribute(attributeName));
+    theme !== "auto" ||
+    allAttributeNames.every(
+      (attributeName) => !root.hasAttribute(attributeName),
+    );
 
   return classNamesMatch && attributesMatch && noExplicitAttributes;
 }
 
-export function getPreferredTheme(config: NormalizedThemeConfig): ThemePreference {
-  if (typeof window === 'undefined') {
+export function getPreferredTheme(
+  config: NormalizedThemeConfig,
+): ThemePreference {
+  if (typeof window === "undefined") {
     return DEFAULT_THEME;
   }
 
@@ -163,7 +183,10 @@ export function getPreferredTheme(config: NormalizedThemeConfig): ThemePreferenc
     return DEFAULT_THEME;
   }
 
-  if (currentThemePreference && rootReflectsThemePreference(currentThemePreference, config)) {
+  if (
+    currentThemePreference &&
+    rootReflectsThemePreference(currentThemePreference, config)
+  ) {
     return currentThemePreference;
   }
 
@@ -174,41 +197,49 @@ export function getPreferredTheme(config: NormalizedThemeConfig): ThemePreferenc
 }
 
 export function getPreferredBrowserTheme(): ResolvedTheme {
-  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
-    return 'light';
+  if (
+    typeof window === "undefined" ||
+    typeof window.matchMedia !== "function"
+  ) {
+    return "light";
   }
 
-  return window.matchMedia('(prefers-color-scheme: dark)')?.matches ? 'dark' : 'light';
+  return window.matchMedia("(prefers-color-scheme: dark)")?.matches
+    ? "dark"
+    : "light";
 }
 
 export function getResolvedTheme(
   preferredTheme: ThemePreference,
-  _config: NormalizedThemeConfig
+  _config: NormalizedThemeConfig,
 ): ResolvedTheme {
-  if (preferredTheme === 'auto') {
+  if (preferredTheme === "auto") {
     return getPreferredBrowserTheme();
   }
 
   return preferredTheme;
 }
 
-export function applyTheme(theme: ThemePreference, config: NormalizedThemeConfig) {
-  if (typeof document === 'undefined') {
+export function applyTheme(
+  theme: ThemePreference,
+  config: NormalizedThemeConfig,
+) {
+  if (typeof document === "undefined") {
     return;
   }
 
   const root = document.documentElement;
   const targetState = getRootThemeStateForPreference(theme, config);
 
-  getAllConfiguredClassNames(config).forEach(className => {
+  getAllConfiguredClassNames(config).forEach((className) => {
     root.classList.remove(className);
   });
 
-  getAllConfiguredAttributeNames(config).forEach(attributeName => {
+  getAllConfiguredAttributeNames(config).forEach((attributeName) => {
     root.removeAttribute(attributeName);
   });
 
-  targetState.classNames.forEach(className => {
+  targetState.classNames.forEach((className) => {
     root.classList.add(className);
   });
 
@@ -222,6 +253,8 @@ export function getSnapshot(config: NormalizedThemeConfig): ThemeSnapshot {
   return `${preferredTheme}:${getResolvedTheme(preferredTheme, config)}`;
 }
 
-export function getServerSnapshot(config: NormalizedThemeConfig): ThemeSnapshot {
+export function getServerSnapshot(
+  config: NormalizedThemeConfig,
+): ThemeSnapshot {
   return `${DEFAULT_THEME}:${config.serverFallback}`;
 }

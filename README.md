@@ -5,7 +5,7 @@
 It supports:
 
 - app-level configuration through `ThemeProvider`
-- a single `useTheme()` hook for reading and updating theme state
+- a single `useTheme()` hook for reading and updating theme state inside `ThemeProvider`
 - `localStorage` persistence
 - cross-tab sync through the `storage` event
 - root classes and root attributes, mapped independently per preference
@@ -45,6 +45,8 @@ function ThemeToggle() {
   );
 }
 ```
+
+`useTheme()` must be used inside `ThemeProvider`.
 
 With no config:
 

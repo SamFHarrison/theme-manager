@@ -21,7 +21,7 @@ function useTheme(): {
 };
 ```
 
-Reads theme state from the nearest `ThemeProvider`, or from package defaults if no provider is present.
+Reads theme state from the nearest `ThemeProvider`.
 
 ## `ThemeConfig`
 
