@@ -1,13 +1,13 @@
-import { act } from '@testing-library/react';
+import { act } from "@testing-library/react";
 
-import { STORAGE_KEY } from '../lib/constants';
+import { STORAGE_KEY } from "../constants";
 
 type MatchMediaListener = (event: MediaQueryListEvent) => void;
 
 const mediaQueryListeners = new Set<MatchMediaListener>();
 
 export const systemPreference = {
-  prefersDark: false
+  prefersDark: false,
 };
 
 /**
@@ -17,7 +17,7 @@ export const systemPreference = {
  * microtask, so tests need to flush the microtask queue too.
  */
 export const flushMicrotasks = () =>
-  new Promise<void>(resolve => {
+  new Promise<void>((resolve) => {
     queueMicrotask(resolve);
   });
 
@@ -33,24 +33,26 @@ export const updateExternalStore = async (callback: () => void) => {
 };
 
 export const mockPrefersColorScheme = () => {
-  Object.defineProperty(window, 'matchMedia', {
+  Object.defineProperty(window, "matchMedia", {
     writable: true,
     value: vi.fn().mockImplementation((query: string) => ({
       matches: systemPreference.prefersDark,
       media: query,
       onchange: null,
       addEventListener: vi.fn((event: string, listener: MatchMediaListener) => {
-        if (event === 'change') {
+        if (event === "change") {
           mediaQueryListeners.add(listener);
         }
       }),
-      removeEventListener: vi.fn((event: string, listener: MatchMediaListener) => {
-        if (event === 'change') {
-          mediaQueryListeners.delete(listener);
-        }
-      }),
-      dispatchEvent: vi.fn()
-    }))
+      removeEventListener: vi.fn(
+        (event: string, listener: MatchMediaListener) => {
+          if (event === "change") {
+            mediaQueryListeners.delete(listener);
+          }
+        },
+      ),
+      dispatchEvent: vi.fn(),
+    })),
   });
 };
 
@@ -59,11 +61,11 @@ export const setMockSystemPrefersDark = async (prefersDark: boolean) => {
 
   const event = {
     matches: prefersDark,
-    media: '(prefers-color-scheme: dark)'
+    media: "(prefers-color-scheme: dark)",
   } as MediaQueryListEvent;
 
   await updateExternalStore(() => {
-    mediaQueryListeners.forEach(listener => {
+    mediaQueryListeners.forEach((listener) => {
       listener(event);
     });
   });
@@ -76,7 +78,8 @@ export const resetMockPrefersColorScheme = () => {
 
 export const getRoot = () => document.documentElement;
 
-export const getStoredTheme = (storageKey = STORAGE_KEY) => window.localStorage.getItem(storageKey);
+export const getStoredTheme = (storageKey = STORAGE_KEY) =>
+  window.localStorage.getItem(storageKey);
 
 export const setStoredTheme = (theme: string, storageKey = STORAGE_KEY) => {
   window.localStorage.setItem(storageKey, theme);

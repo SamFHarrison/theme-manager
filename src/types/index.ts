@@ -1,7 +1,7 @@
-import type { ReactNode } from 'react';
+import type { ReactNode } from "react";
 
-export type ThemePreference = 'auto' | 'dark' | 'light';
-export type ResolvedTheme = 'dark' | 'light';
+export type ThemePreference = "auto" | "dark" | "light";
+export type ResolvedTheme = "dark" | "light";
 
 export type ThemeSnapshot = `${ThemePreference}:${ResolvedTheme}`;
 

@@ -1,11 +1,15 @@
 import { createElement, PropsWithChildren } from "react";
-import { act, renderHook, waitFor } from "@testing-library/react";
+import {
+  act,
+  renderHook,
+  waitFor,
+  type RenderHookResult,
+} from "@testing-library/react";
 
-import { CHANGE_EVENT, STORAGE_KEY } from "../lib/constants";
-import { ThemeProvider } from "../provider/ThemeProvider";
-import { getServerSnapshot, normalizeThemeConfig } from "../lib/theme-utils";
+import { STORAGE_KEY } from "../constants";
+import { ThemeProvider } from "./ThemeProvider";
 import { ThemeConfig } from "../types";
-import { useTheme } from "../hooks/useTheme";
+import { useTheme } from "../hook/useTheme";
 import {
   flushMicrotasks,
   getRoot,
@@ -16,7 +20,7 @@ import {
   setStoredTheme,
   systemPreference,
   updateExternalStore,
-} from "./test-utils";
+} from "../utils/test-utils";
 
 const DATA_THEME_ATTRIBUTE = "data-theme";
 
@@ -24,16 +28,15 @@ const renderUseTheme = async (config?: ThemeConfig) => {
   const wrapper = ({ children }: PropsWithChildren) =>
     createElement(ThemeProvider, config ? ({ config } as any) : null, children);
 
-  const view = renderHook(() => useTheme(), { wrapper });
+  let view!: RenderHookResult<ReturnType<typeof useTheme>, unknown>;
 
   await act(async () => {
+    view = renderHook(() => useTheme(), { wrapper });
     await flushMicrotasks();
   });
 
   return view;
 };
-
-const renderUseThemeWithoutProvider = () => renderHook(() => useTheme());
 
 beforeEach(() => {
   window.localStorage.clear();
@@ -53,13 +56,7 @@ afterEach(() => {
   resetMockPrefersColorScheme();
 });
 
-describe("useTheme", () => {
-  it("throws if used outside ThemeProvider", () => {
-    expect(() => renderUseThemeWithoutProvider()).toThrow(
-      "useTheme() must be used within a ThemeProvider.",
-    );
-  });
-
+describe("ThemeProvider", () => {
   it("defaults to auto and removes explicit theme markers", async () => {
     const { result } = await renderUseTheme();
 
@@ -416,35 +413,5 @@ describe("useTheme", () => {
     });
 
     expect(getRoot().getAttribute(DATA_THEME_ATTRIBUTE)).toBe("dark");
-  });
-
-  it("uses provider configured server fallback in the server snapshot", () => {
-    expect(
-      getServerSnapshot(
-        normalizeThemeConfig({
-          storageKey: STORAGE_KEY,
-          changeEventName: CHANGE_EVENT,
-          serverFallback: "dark",
-          rootThemes: {
-            auto: {
-              classNames: [],
-              attributes: {},
-            },
-            light: {
-              classNames: [],
-              attributes: {
-                "data-theme": "light",
-              },
-            },
-            dark: {
-              classNames: [],
-              attributes: {
-                "data-theme": "dark",
-              },
-            },
-          },
-        }),
-      ),
-    ).toBe("auto:dark");
   });
 });

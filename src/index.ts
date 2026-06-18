@@ -8,5 +8,5 @@ export type {
   ThemeProviderProps,
 } from "./types";
 export * from "./provider/ThemeProvider";
-export * from "./hooks/useTheme";
-export { isValidThemePreference } from "./lib/theme-utils";
+export * from "./hook/useTheme";
+export { isValidThemePreference } from "./utils/theme-utils";

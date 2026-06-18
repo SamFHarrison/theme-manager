@@ -23,7 +23,7 @@ import {
   getSnapshot,
   normalizeThemeConfig,
   safelySetStoredTheme,
-} from "../lib/theme-utils";
+} from "../utils/theme-utils";
 
 const ThemeStateContext = createContext<UseThemeReturn | null>(null);
 

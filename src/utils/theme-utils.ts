@@ -3,7 +3,7 @@ import {
   DEFAULT_THEME,
   DEFAULT_THEME_CONFIG,
   STORAGE_KEY,
-} from "./constants";
+} from "../constants";
 import {
   ResolvedTheme,
   RootThemeState,
