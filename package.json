@@ -2,7 +2,7 @@
   "name": "theme-manager",
   "version": "0.1.0",
   "description": "A package for changing and persisting light, auto and dark themes in React apps.",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "sideEffects": false,
   "files": [
     "dist",
