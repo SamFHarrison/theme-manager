@@ -1,7 +1,7 @@
 {
   "name": "theme-manager",
   "version": "0.1.0",
-  "description": "A small React hook for persisting and applying light, dark, and auto theme preferences.",
+  "description": "A package for changing and persisting light, auto and dark themes in React apps.",
   "license": "MIT",
   "sideEffects": false,
   "files": [
