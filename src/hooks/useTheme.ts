@@ -1,7 +1,7 @@
 'use client';
 
-import { UseThemeReturn } from './types';
-import { useThemeStateContext } from './ThemeProvider';
+import { UseThemeReturn } from '../types';
+import { useThemeStateContext } from '../provider/ThemeProvider';
 
 export function useTheme(): UseThemeReturn {
   const themeState = useThemeStateContext();

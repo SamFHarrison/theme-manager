@@ -1,6 +1,6 @@
 import { act } from '@testing-library/react';
 
-import { STORAGE_KEY } from './constants';
+import { STORAGE_KEY } from '../lib/constants';
 
 type MatchMediaListener = (event: MediaQueryListEvent) => void;
 

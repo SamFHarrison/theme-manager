@@ -1,11 +1,11 @@
 import { createElement, PropsWithChildren } from "react";
 import { act, renderHook, waitFor } from "@testing-library/react";
 
-import { CHANGE_EVENT, STORAGE_KEY } from "./constants";
-import { ThemeProvider } from "./ThemeProvider";
-import { ThemeConfig } from "./types";
-import { useTheme } from "./useTheme";
-import { getServerSnapshot, normalizeThemeConfig } from "./useTheme.utils";
+import { CHANGE_EVENT, STORAGE_KEY } from "../lib/constants";
+import { ThemeProvider } from "../provider/ThemeProvider";
+import { getServerSnapshot, normalizeThemeConfig } from "../lib/theme-utils";
+import { ThemeConfig } from "../types";
+import { useTheme } from "../hooks/useTheme";
 import {
   flushMicrotasks,
   getRoot,
@@ -16,7 +16,7 @@ import {
   setStoredTheme,
   systemPreference,
   updateExternalStore,
-} from "./useTheme.test.util";
+} from "./test-utils";
 
 const DATA_THEME_ATTRIBUTE = "data-theme";
 

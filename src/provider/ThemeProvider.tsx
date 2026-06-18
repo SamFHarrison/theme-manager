@@ -16,14 +16,14 @@ import {
   ThemePreference,
   ThemeProviderProps,
   UseThemeReturn,
-} from "./types";
+} from "../types";
 import {
   applyTheme,
   getServerSnapshot,
   getSnapshot,
   normalizeThemeConfig,
   safelySetStoredTheme,
-} from "./useTheme.utils";
+} from "../lib/theme-utils";
 
 const ThemeStateContext = createContext<UseThemeReturn | null>(null);
 

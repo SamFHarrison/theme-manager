@@ -10,7 +10,7 @@ import {
   ThemeConfig,
   ThemePreference,
   ThemeSnapshot,
-} from "./types";
+} from "../types";
 
 type NormalizedRootThemeState = {
   classNames: string[];

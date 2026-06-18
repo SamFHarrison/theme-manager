@@ -1,4 +1,4 @@
-import { ThemeConfig, ThemePreference } from './types';
+import { ThemeConfig, ThemePreference } from '../types';
 
 export const DEFAULT_THEME: ThemePreference = 'auto';
 export const STORAGE_KEY = 'theme-manager-theme-preference';

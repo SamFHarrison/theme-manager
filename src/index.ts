@@ -7,6 +7,6 @@ export type {
   ThemePreference,
   ThemeProviderProps,
 } from "./types";
-export * from "./ThemeProvider";
-export * from "./useTheme";
-export { isValidThemePreference } from "./useTheme.utils";
+export * from "./provider/ThemeProvider";
+export * from "./hooks/useTheme";
+export { isValidThemePreference } from "./lib/theme-utils";
