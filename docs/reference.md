@@ -1,5 +1,22 @@
 # Reference
 
+## Supported import surface
+
+Import from the package root only:
+
+```ts
+import {
+  ThemeProvider,
+  useTheme,
+  isValidThemePreference,
+  type ThemePreference,
+  type ResolvedTheme,
+  type RootThemeState,
+  type ThemeConfig,
+  type ThemeProviderProps,
+} from "@bigsams/theme-manager";
+```
+
 ## `ThemeProvider`
 
 ```ts
@@ -9,7 +26,7 @@ type ThemeProviderProps = {
 };
 ```
 
-Configures `theme-manager` once for the component subtree.
+Configures `@bigsams/theme-manager` once for the component subtree.
 
 ## `useTheme()`
 
@@ -22,6 +39,16 @@ function useTheme(): {
 ```
 
 Reads theme state from the nearest `ThemeProvider`.
+
+## `isValidThemePreference()`
+
+```ts
+function isValidThemePreference(
+  value: unknown,
+): value is ThemePreference;
+```
+
+Returns `true` when the value is one of `"auto"`, `"light"`, or `"dark"`.
 
 ## `ThemeConfig`
 
@@ -67,6 +94,21 @@ Examples:
 
 ## SSR
 
-`useTheme()` is client-only. Server components cannot call it.
+This package is intended for client-rendered React apps.
 
-This package does not currently include a bootstrap helper, so SSR apps may briefly render the fallback theme before hydration.
+It is not recommended for SSR frameworks. If you need SSR-aware theming, use a framework-specific solution such as `next-themes` for Next.js.
+
+`serverFallback` remains part of the config API and controls the server snapshot value returned internally before the client takes over.
+
+## Browser support
+
+This package currently supports:
+
+- Chrome `73+`
+- Edge `79+`
+- Firefox `63+`
+- Safari `14+`
+
+Internet Explorer is unsupported.
+
+The Safari floor is stricter than the JavaScript-only floor because the implementation listens to system theme changes through the `MediaQueryList` `change` event API.

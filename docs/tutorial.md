@@ -3,12 +3,12 @@
 ## Step 1: Add the provider
 
 ```tsx
-import { ThemeProvider } from "theme-manager";
+import { ThemeProvider } from "@bigsams/theme-manager";
 
 export function App() {
   return (
     <ThemeProvider>
-      <Page>
+      <Page />
     </ThemeProvider>
   );
 }
@@ -17,7 +17,7 @@ export function App() {
 ## Step 2: Read the theme
 
 ```tsx
-import { useTheme } from "theme-manager";
+import { useTheme } from "@bigsams/theme-manager";
 
 function ThemeSettings() {
   const { preferredTheme, resolvedTheme } = useTheme();

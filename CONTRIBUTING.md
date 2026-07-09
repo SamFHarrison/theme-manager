@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for contributing to `theme-manager`.
+Thanks for contributing to `@bigsams/theme-manager`.
 
 This repo is a small React library, so the main goal of a contribution is to keep the public API, theme semantics, and package output predictable.
 
@@ -15,6 +15,7 @@ This repo is a small React library, so the main goal of a contribution is to kee
 This package targets:
 
 - Node `18+`
+- npm `10.9.0`
 - React `18+` as a peer dependency
 
 Install dependencies:
@@ -36,6 +37,7 @@ npm install
 Use the existing npm scripts while working:
 
 ```sh
+npm run typecheck
 npm run test
 npm run test:watch
 npm run build
@@ -43,9 +45,10 @@ npm run build
 
 Expected checks before opening a PR:
 
-1. Run `npm run test`.
-2. Run `npm run build`.
-3. If the package surface changed, verify the packed output with `npm pack`.
+1. Run `npm run typecheck`.
+2. Run `npm run test`.
+3. Run `npm run build`.
+4. If the package surface changed, verify the packed output with `npm pack --dry-run`.
 
 ## Testing Expectations
 
@@ -72,7 +75,7 @@ When updating docs, keep each document focused on one job:
 
 Use `README.md` for install instructions, quick start material, and a high-level package overview.
 
-If a contribution changes behavior, config, or examples, update the document type that matches the change.
+If a contribution changes behavior, config, examples, supported browsers, or the public API surface, update the document type that matches the change.
 
 ## Testing In a Local App
 
@@ -80,6 +83,7 @@ If you want to validate the package in a real app, build and pack it first:
 
 ```sh
 npm install
+npm run typecheck
 npm run build
 npm pack
 ```
@@ -87,10 +91,26 @@ npm pack
 Then install the generated tarball in the app you want to test:
 
 ```sh
-npm install /path/to/theme-manager/theme-manager-<version>.tgz
+npm install /path/to/theme-manager/bigsams-theme-manager-<version>.tgz
 ```
 
 This is the safest way to verify published-package behavior, including exports and generated types.
+
+## Manual Release Flow
+
+This package is published manually.
+
+Before publishing:
+
+1. Run `npm install`.
+2. Run `npm run typecheck`.
+3. Run `npm run test`.
+4. Run `npm run build`.
+5. Run `npm pack --dry-run` and verify the tarball only contains the intended publish files.
+6. Install the generated tarball into a minimal consumer app and verify root imports and exported types resolve as expected.
+7. Review `README.md` and `docs/` for package-name consistency and valid code examples.
+
+When publishing, `prepublishOnly` will re-run the local validation gate automatically.
 
 ## Pull Requests
 
