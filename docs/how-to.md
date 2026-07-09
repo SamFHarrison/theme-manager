@@ -3,7 +3,7 @@
 ## Configure once at the app root
 
 ```tsx
-import { ThemeProvider } from "theme-manager";
+import { ThemeProvider } from "@bigsams/theme-manager";
 
 export function App() {
   return <ThemeProvider>{/* ... */}</ThemeProvider>;
@@ -13,7 +13,7 @@ export function App() {
 ## Read and update theme state
 
 ```tsx
-import { useTheme } from "theme-manager";
+import { useTheme } from "@bigsams/theme-manager";
 
 function ThemeToggle() {
   const { preferredTheme, resolvedTheme, setTheme } = useTheme();
