@@ -1,6 +1,7 @@
 ## Summary
 
-Describe the change in a few sentences.
+- Describe the change in a few sentences.
+- Explain any public API or behaviour changes.
 
 ## Motivation
 
@@ -12,16 +13,4 @@ Talk me through what you've considered before and during making the change.
 
 ## Testing
 
-- [ ] `npm run typecheck`
-- [ ] `npm run test`
-- [ ] `npm run build`
-- [ ] `npm pack --dry-run` when the package surface or publish output changed
-
-## Docs impact
-
-- [ ] README updated
-- [ ] `docs/` updated
-
-## API or behavior notes
-
-Call out any public API, semantic, or browser-support impact.
+Explain how can we verify your change programatically.
