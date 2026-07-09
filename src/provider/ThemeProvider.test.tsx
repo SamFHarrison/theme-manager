@@ -14,6 +14,7 @@ import {
   flushMicrotasks,
   getRoot,
   getStoredTheme,
+  mockMutationObserver,
   mockPrefersColorScheme,
   resetMockPrefersColorScheme,
   setMockSystemPrefersDark,
@@ -45,6 +46,7 @@ beforeEach(() => {
   document.documentElement.removeAttribute("data-color-mode");
   resetMockPrefersColorScheme();
   mockPrefersColorScheme();
+  mockMutationObserver();
 });
 
 afterEach(() => {
