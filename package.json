@@ -1,9 +1,12 @@
 {
-  "name": "theme-manager",
+  "name": "@bigsams/theme-manager",
   "version": "0.1.0",
   "description": "A package for changing and persisting light, auto and dark themes in React apps.",
   "license": "Apache-2.0",
   "sideEffects": false,
+  "publishConfig": {
+    "access": "public"
+  },
   "files": [
     "dist",
     "README.md"
@@ -34,6 +37,8 @@
   },
   "scripts": {
     "build": "tsup src/index.ts --format esm,cjs --dts --clean",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run typecheck && npm run test && npm run build",
     "test": "vitest run",
     "test:watch": "vitest"
   },
@@ -44,5 +49,13 @@
     "tsup": "^8.5.0",
     "typescript": "^5.9.3",
     "vitest": "^3.2.4"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SamFHarrison/theme-manager"
+  },
+  "homepage": "https://github.com/SamFHarrison/theme-manager#readme",
+  "bugs": {
+    "url": "https://github.com/SamFHarrison/theme-manager/issues"
   }
 }
