@@ -5,6 +5,7 @@ import { STORAGE_KEY } from "../constants";
 type MatchMediaListener = (event: MediaQueryListEvent) => void;
 
 const mediaQueryListeners = new Set<MatchMediaListener>();
+const mutationObservers = new Set<MutationCallback>();
 
 export const systemPreference = {
   prefersDark: false,
@@ -56,6 +57,36 @@ export const mockPrefersColorScheme = () => {
   });
 };
 
+export const mockMutationObserver = () => {
+  class MockMutationObserver implements MutationObserver {
+    readonly callback: MutationCallback;
+
+    constructor(callback: MutationCallback) {
+      this.callback = callback;
+      mutationObservers.add(callback);
+    }
+
+    disconnect() {
+      mutationObservers.delete(this.callback);
+    }
+
+    observe() {}
+
+    takeRecords(): MutationRecord[] {
+      return [];
+    }
+  }
+
+  Object.defineProperty(window, "MutationObserver", {
+    writable: true,
+    value: MockMutationObserver,
+  });
+  Object.defineProperty(globalThis, "MutationObserver", {
+    writable: true,
+    value: MockMutationObserver,
+  });
+};
+
 export const setMockSystemPrefersDark = async (prefersDark: boolean) => {
   systemPreference.prefersDark = prefersDark;
 
@@ -74,6 +105,7 @@ export const setMockSystemPrefersDark = async (prefersDark: boolean) => {
 export const resetMockPrefersColorScheme = () => {
   systemPreference.prefersDark = false;
   mediaQueryListeners.clear();
+  mutationObservers.clear();
 };
 
 export const getRoot = () => document.documentElement;

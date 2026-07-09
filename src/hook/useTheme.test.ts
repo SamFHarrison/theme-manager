@@ -8,7 +8,12 @@ import {
 
 import { ThemeProvider } from "../provider/ThemeProvider";
 import { useTheme } from "./useTheme";
-import { flushMicrotasks } from "../utils/test-utils";
+import {
+  flushMicrotasks,
+  mockMutationObserver,
+  mockPrefersColorScheme,
+  resetMockPrefersColorScheme,
+} from "../utils/test-utils";
 
 const renderUseTheme = async () => {
   const wrapper = ({ children }: PropsWithChildren) =>
@@ -23,6 +28,17 @@ const renderUseTheme = async () => {
 
   return view;
 };
+
+beforeEach(() => {
+  resetMockPrefersColorScheme();
+  mockPrefersColorScheme();
+  mockMutationObserver();
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
+  resetMockPrefersColorScheme();
+});
 
 describe("useTheme", () => {
   it("throws if used outside ThemeProvider", () => {
