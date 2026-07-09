@@ -20,10 +20,10 @@ npm install @bigsams/theme-manager
 
 ## Docs
 
-- [Tutorial](./docs/tutorial.md)
-- [How-to guide](./docs/how-to.md)
-- [Reference](./docs/reference.md)
-- [Explanation](./docs/explanation.md)
+- [Tutorial](https://github.com/SamFHarrison/theme-manager/tree/main/docs/tutorial.md)
+- [How-to guide](https://github.com/SamFHarrison/theme-manager/tree/main/docs/how-to.md)
+- [Reference](https://github.com/SamFHarrison/theme-manager/tree/main/docs/reference.md)
+- [Explanation](https://github.com/SamFHarrison/theme-manager/tree/main/docs/explanation.md)
 
 ## Basic usage
 
@@ -137,11 +137,7 @@ Root theme semantics:
 - provide a preference to fully replace the package default for that preference
 - if you want both classes and attributes, specify both explicitly
 
-`storageKey` and `changeEventName` are optional. Override them when:
-
-- multiple apps on the same origin use `@bigsams/theme-manager`
-- multiple `@bigsams/theme-manager` instances can run on the same page
-- you need isolated theme persistence or event channels under one domain
+Override `storageKey` and `changeEventName` when multiple apps should intentionally share one persisted theme preference and one theme-change channel.
 
 ## Supported API
 

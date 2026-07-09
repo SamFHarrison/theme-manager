@@ -61,4 +61,4 @@ Configured preferences replace their defaults. If you provide only a class for `
 
 ## Override storage and event names
 
-Override `storageKey` and `changeEventName` when multiple apps on the same origin need isolation.
+Override `storageKey` and `changeEventName` when multiple apps should share the same saved theme preference and react to the same theme-change event.

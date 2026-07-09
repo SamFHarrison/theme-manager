@@ -82,6 +82,8 @@ Without config:
 - `changeEventName` defaults to `theme-manager-theme-change`
 - `serverFallback` defaults to `light`
 
+Override `storageKey` and `changeEventName` when multiple apps should intentionally share one persisted theme preference and one theme-change channel.
+
 ## Preference replacement semantics
 
 Each configured `rootThemes` preference replaces the built-in default for that preference.
