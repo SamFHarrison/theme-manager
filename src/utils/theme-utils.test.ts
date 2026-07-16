@@ -1,16 +1,12 @@
 import { CHANGE_EVENT, DEFAULT_THEME_CONFIG, STORAGE_KEY } from "../constants";
-import {
-  getServerSnapshot,
-  isValidThemePreference,
-  normalizeThemeConfig,
-} from "./theme-utils";
+import { isValidThemePreference, normalizeThemeConfig } from "./theme-utils";
 
 describe("theme-utils", () => {
   it("normalizes defaults when config is omitted", () => {
     expect(normalizeThemeConfig()).toEqual({
       storageKey: STORAGE_KEY,
       changeEventName: CHANGE_EVENT,
-      serverFallback: "light",
+      defaultTheme: "auto",
       rootThemes: {
         auto: {
           classNames: [],
@@ -37,7 +33,7 @@ describe("theme-utils", () => {
       normalizeThemeConfig({
         storageKey: " custom-key ",
         changeEventName: " custom-event ",
-        serverFallback: "dark",
+        defaultTheme: "dark",
         rootThemes: {
           auto: {
             classNames: [" auto-theme ", "   "],
@@ -54,7 +50,7 @@ describe("theme-utils", () => {
     ).toEqual({
       storageKey: "custom-key",
       changeEventName: "custom-event",
-      serverFallback: "dark",
+      defaultTheme: "dark",
       rootThemes: {
         auto: {
           classNames: ["auto-theme"],
@@ -87,6 +83,15 @@ describe("theme-utils", () => {
     expect(normalizedConfig.changeEventName).toBe(CHANGE_EVENT);
   });
 
+  it("retains an explicitly configured default theme", () => {
+    expect(normalizeThemeConfig({ defaultTheme: "light" }).defaultTheme).toBe(
+      "light",
+    );
+    expect(normalizeThemeConfig({ defaultTheme: "dark" }).defaultTheme).toBe(
+      "dark",
+    );
+  });
+
   it("accepts only valid theme preferences", () => {
     expect(isValidThemePreference("auto")).toBe(true);
     expect(isValidThemePreference("light")).toBe(true);
@@ -94,35 +99,5 @@ describe("theme-utils", () => {
     expect(isValidThemePreference("banana")).toBe(false);
     expect(isValidThemePreference("")).toBe(false);
     expect(isValidThemePreference(null)).toBe(false);
-  });
-
-  it("uses the configured server fallback in the server snapshot", () => {
-    expect(
-      getServerSnapshot(
-        normalizeThemeConfig({
-          storageKey: STORAGE_KEY,
-          changeEventName: CHANGE_EVENT,
-          serverFallback: "dark",
-          rootThemes: {
-            auto: {
-              classNames: [],
-              attributes: {},
-            },
-            light: {
-              classNames: [],
-              attributes: {
-                "data-theme": "light",
-              },
-            },
-            dark: {
-              classNames: [],
-              attributes: {
-                "data-theme": "dark",
-              },
-            },
-          },
-        }),
-      ),
-    ).toBe("auto:dark");
   });
 });
