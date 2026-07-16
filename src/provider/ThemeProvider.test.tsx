@@ -71,6 +71,63 @@ describe("ThemeProvider", () => {
     expect(getRoot().hasAttribute(DATA_THEME_ATTRIBUTE)).toBe(false);
   });
 
+  it("supports light as the default theme", async () => {
+    getRoot().setAttribute(DATA_THEME_ATTRIBUTE, "stale");
+
+    const { result } = await renderUseTheme({ defaultTheme: "light" });
+
+    await waitFor(() => {
+      expect(result.current.preferredTheme).toBe("light");
+      expect(result.current.resolvedTheme).toBe("light");
+    });
+
+    expect(getStoredTheme()).toBe("light");
+    expect(getRoot().getAttribute(DATA_THEME_ATTRIBUTE)).toBe("light");
+  });
+
+  it("supports dark as the default theme", async () => {
+    getRoot().setAttribute(DATA_THEME_ATTRIBUTE, "stale");
+
+    const { result } = await renderUseTheme({ defaultTheme: "dark" });
+
+    await waitFor(() => {
+      expect(result.current.preferredTheme).toBe("dark");
+      expect(result.current.resolvedTheme).toBe("dark");
+    });
+
+    expect(getStoredTheme()).toBe("dark");
+    expect(getRoot().getAttribute(DATA_THEME_ATTRIBUTE)).toBe("dark");
+  });
+
+  it("resolves auto when explicitly configured as the default theme", async () => {
+    systemPreference.prefersDark = true;
+    getRoot().setAttribute(DATA_THEME_ATTRIBUTE, "stale");
+
+    const { result } = await renderUseTheme({ defaultTheme: "auto" });
+
+    await waitFor(() => {
+      expect(result.current.preferredTheme).toBe("auto");
+      expect(result.current.resolvedTheme).toBe("dark");
+    });
+
+    expect(getStoredTheme()).toBe("auto");
+    expect(getRoot().hasAttribute(DATA_THEME_ATTRIBUTE)).toBe(false);
+  });
+
+  it("prefers a valid stored preference over the configured default", async () => {
+    setStoredTheme("light");
+
+    const { result } = await renderUseTheme({ defaultTheme: "dark" });
+
+    await waitFor(() => {
+      expect(result.current.preferredTheme).toBe("light");
+      expect(result.current.resolvedTheme).toBe("light");
+    });
+
+    expect(getStoredTheme()).toBe("light");
+    expect(getRoot().getAttribute(DATA_THEME_ATTRIBUTE)).toBe("light");
+  });
+
   it("resolves auto to dark when the system preference is dark", async () => {
     systemPreference.prefersDark = true;
 
@@ -156,6 +213,20 @@ describe("ThemeProvider", () => {
 
     expect(getStoredTheme()).toBe("auto");
     expect(getRoot().hasAttribute(DATA_THEME_ATTRIBUTE)).toBe(false);
+  });
+
+  it("replaces invalid stored preferences with the configured default", async () => {
+    setStoredTheme("banana");
+
+    const { result } = await renderUseTheme({ defaultTheme: "dark" });
+
+    await waitFor(() => {
+      expect(result.current.preferredTheme).toBe("dark");
+      expect(result.current.resolvedTheme).toBe("dark");
+    });
+
+    expect(getStoredTheme()).toBe("dark");
+    expect(getRoot().getAttribute(DATA_THEME_ATTRIBUTE)).toBe("dark");
   });
 
   it("updates resolvedTheme when the system preference changes in auto mode", async () => {
