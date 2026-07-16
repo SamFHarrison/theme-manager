@@ -62,6 +62,17 @@ With no config:
 - `dark` sets `data-theme="dark"` on `<html>`
 - `auto` removes any explicit theme marker from the root element
 
+Set the preference used when there is no valid saved preference with
+`defaultTheme`:
+
+```tsx
+<ThemeProvider config={{ defaultTheme: "dark" }}>
+  <App />
+</ThemeProvider>
+```
+
+A valid saved preference always takes precedence over `defaultTheme`.
+
 ## Custom root mappings
 
 ```tsx
@@ -122,7 +133,7 @@ type RootThemeState = {
 type ThemeConfig = {
   storageKey?: string;
   changeEventName?: string;
-  serverFallback?: "light" | "dark";
+  defaultTheme?: "auto" | "light" | "dark";
   rootThemes?: {
     auto?: RootThemeState;
     light?: RootThemeState;
@@ -174,5 +185,3 @@ Older Safari versions are excluded because the package listens for system theme 
 This package is intended for client-rendered React apps.
 
 It is not recommended for SSR frameworks. If you are building with a framework-specific SSR stack, use a solution designed for that platform instead, such as `next-themes` for Next.js apps.
-
-`serverFallback` remains part of the config API, but SSR is not a supported target for this package.

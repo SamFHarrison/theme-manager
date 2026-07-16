@@ -13,7 +13,7 @@ export type RootThemeState = {
 export type ThemeConfig = {
   storageKey?: string;
   changeEventName?: string;
-  serverFallback?: ResolvedTheme;
+  defaultTheme?: ThemePreference;
   rootThemes?: {
     auto?: RootThemeState;
     light?: RootThemeState;

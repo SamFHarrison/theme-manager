@@ -12,14 +12,12 @@ import {
 
 import {
   ResolvedTheme,
-  ThemeConfig,
   ThemePreference,
   ThemeProviderProps,
   UseThemeReturn,
 } from "../types";
 import {
   applyTheme,
-  getServerSnapshot,
   getSnapshot,
   normalizeThemeConfig,
   safelySetStoredTheme,
@@ -75,9 +73,7 @@ export function ThemeProvider({ children, config }: ThemeProviderProps) {
     [config],
   );
   const [snapshot, setSnapshot] = useState(() =>
-    typeof window === "undefined"
-      ? getServerSnapshot(normalizedConfig)
-      : getSnapshot(normalizedConfig),
+    getSnapshot(normalizedConfig),
   );
   const [preferredTheme, resolvedTheme] = snapshot.split(":") as [
     ThemePreference,
@@ -139,5 +135,3 @@ export function ThemeProvider({ children, config }: ThemeProviderProps) {
 export function useThemeStateContext() {
   return useContext(ThemeStateContext);
 }
-
-export type { ThemeConfig };
