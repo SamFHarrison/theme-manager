@@ -1,6 +1,5 @@
 import {
   CHANGE_EVENT,
-  DEFAULT_THEME,
   DEFAULT_THEME_CONFIG,
   STORAGE_KEY,
 } from "../constants";
@@ -20,7 +19,7 @@ type NormalizedRootThemeState = {
 export type NormalizedThemeConfig = {
   storageKey: string;
   changeEventName: string;
-  serverFallback: ResolvedTheme;
+  defaultTheme: ThemePreference;
   rootThemes: {
     auto: NormalizedRootThemeState;
     light: NormalizedRootThemeState;
@@ -63,8 +62,7 @@ export function normalizeThemeConfig(
   return {
     storageKey: config?.storageKey?.trim() || STORAGE_KEY,
     changeEventName: config?.changeEventName?.trim() || CHANGE_EVENT,
-    serverFallback:
-      config?.serverFallback ?? DEFAULT_THEME_CONFIG.serverFallback!,
+    defaultTheme: config?.defaultTheme ?? DEFAULT_THEME_CONFIG.defaultTheme!,
     rootThemes: {
       auto: config?.rootThemes?.auto
         ? normalizeRootThemeState(config.rootThemes.auto)
@@ -167,7 +165,7 @@ export function getPreferredTheme(
   config: NormalizedThemeConfig,
 ): ThemePreference {
   if (typeof window === "undefined") {
-    return DEFAULT_THEME;
+    return config.defaultTheme;
   }
 
   const storedPreference = safelyGetStoredTheme(config);
@@ -178,9 +176,9 @@ export function getPreferredTheme(
   }
 
   if (storedPreference !== null) {
-    safelySetStoredTheme(DEFAULT_THEME, config);
-    applyTheme(DEFAULT_THEME, config);
-    return DEFAULT_THEME;
+    safelySetStoredTheme(config.defaultTheme, config);
+    applyTheme(config.defaultTheme, config);
+    return config.defaultTheme;
   }
 
   if (
@@ -190,10 +188,10 @@ export function getPreferredTheme(
     return currentThemePreference;
   }
 
-  safelySetStoredTheme(DEFAULT_THEME, config);
-  applyTheme(DEFAULT_THEME, config);
+  safelySetStoredTheme(config.defaultTheme, config);
+  applyTheme(config.defaultTheme, config);
 
-  return DEFAULT_THEME;
+  return config.defaultTheme;
 }
 
 export function getPreferredBrowserTheme(): ResolvedTheme {
@@ -251,10 +249,4 @@ export function applyTheme(
 export function getSnapshot(config: NormalizedThemeConfig): ThemeSnapshot {
   const preferredTheme = getPreferredTheme(config);
   return `${preferredTheme}:${getResolvedTheme(preferredTheme, config)}`;
-}
-
-export function getServerSnapshot(
-  config: NormalizedThemeConfig,
-): ThemeSnapshot {
-  return `${DEFAULT_THEME}:${config.serverFallback}`;
 }
