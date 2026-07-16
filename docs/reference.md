@@ -61,7 +61,7 @@ type RootThemeState = {
 type ThemeConfig = {
   storageKey?: string;
   changeEventName?: string;
-  serverFallback?: "light" | "dark";
+  defaultTheme?: "auto" | "light" | "dark";
   rootThemes?: {
     auto?: RootThemeState;
     light?: RootThemeState;
@@ -80,7 +80,10 @@ Without config:
 - `dark` sets `data-theme="dark"`
 - `storageKey` defaults to `theme-manager-theme-preference`
 - `changeEventName` defaults to `theme-manager-theme-change`
-- `serverFallback` defaults to `light`
+- `defaultTheme` defaults to `auto`
+
+`defaultTheme` is persisted and applied when no valid saved preference exists.
+A valid saved preference takes precedence.
 
 Override `storageKey` and `changeEventName` when multiple apps should intentionally share one persisted theme preference and one theme-change channel.
 
@@ -99,8 +102,6 @@ Examples:
 This package is intended for client-rendered React apps.
 
 It is not recommended for SSR frameworks. If you need SSR-aware theming, use a framework-specific solution such as `next-themes` for Next.js.
-
-`serverFallback` remains part of the config API and controls the server snapshot value returned internally before the client takes over.
 
 ## Browser support
 
