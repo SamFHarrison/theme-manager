@@ -49,7 +49,7 @@ describe("useTheme", () => {
     expect(result.current.preferredTheme).toBe("light");
     expect(result.current.resolvedTheme).toBe("light");
     expect(warn).toHaveBeenCalledWith(
-      "useTheme() is being used outside a ThemeProvider. Falling back to a static light theme.",
+      "useTheme() is being used outside a ThemeProvider. It will return static 'light' theme values, but no theme will be applied to the root element.",
     );
 
     act(() => result.current.setTheme("dark"));

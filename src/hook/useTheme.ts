@@ -10,7 +10,7 @@ export function useTheme(): UseThemeReturn {
   if (!themeState) {
     if (process.env.NODE_ENV !== "production") {
       console.warn(
-        "useTheme() is being used outside a ThemeProvider. Falling back to a static light theme.",
+        "useTheme() is being used outside a ThemeProvider. It will return static 'light' theme values, but no theme will be applied to the root element.",
       );
     }
 
