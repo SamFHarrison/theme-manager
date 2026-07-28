@@ -40,7 +40,11 @@ function useTheme(): {
 
 Reads theme state from the nearest `ThemeProvider`.
 
-When rendered outside a provider, it returns a fallback of `light` for both theme values and a no-op `setTheme` function. This fallback logs a warning in development and remains silent in production. This is to ease development and consumption of component libraries.
+When rendered outside a provider, it returns a fallback of `light` for both
+theme values and a no-op `setTheme` function. It does not apply a theme to the
+document root. This fallback logs a warning in development and remains silent
+in production. This is to ease development and consumption of component
+libraries.
 
 ## `isValidThemePreference()`
 
