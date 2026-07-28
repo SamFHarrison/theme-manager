@@ -37,14 +37,35 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.restoreAllMocks();
+  vi.unstubAllEnvs();
   resetMockPrefersColorScheme();
 });
 
 describe("useTheme", () => {
-  it("throws if used outside ThemeProvider", () => {
-    expect(() => renderHook(() => useTheme())).toThrow(
-      "useTheme() must be used within a ThemeProvider.",
+  it("returns a static light fallback and warns when outside a ThemeProvider", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const { result } = renderHook(() => useTheme());
+
+    expect(result.current.preferredTheme).toBe("light");
+    expect(result.current.resolvedTheme).toBe("light");
+    expect(warn).toHaveBeenCalledWith(
+      "useTheme() is being used outside a ThemeProvider. It will return static 'light' theme values, but no theme will be applied to the root element.",
     );
+
+    act(() => result.current.setTheme("dark"));
+
+    expect(result.current.preferredTheme).toBe("light");
+    expect(result.current.resolvedTheme).toBe("light");
+  });
+
+  it("does not warn outside ThemeProvider in production", () => {
+    vi.stubEnv("NODE_ENV", "production");
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    const { result } = renderHook(() => useTheme());
+
+    expect(result.current.resolvedTheme).toBe("light");
+    expect(warn).not.toHaveBeenCalled();
   });
 
   it("returns the provider theme state shape", async () => {
