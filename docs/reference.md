@@ -40,11 +40,7 @@ function useTheme(): {
 
 Reads theme state from the nearest `ThemeProvider`.
 
-When rendered outside a provider, it returns a fallback of `light` for both
-theme values and a no-op `setTheme` function. It does not apply a theme to the
-document root. This fallback logs a warning in development and remains silent
-in production. This is to ease development and consumption of component
-libraries.
+When rendered outside a provider, it returns a fallback of `light` for both theme values and a no-op `setTheme` function. It does not apply a theme to the document root. This fallback logs a warning in development and remains silent in production. This is to ease development and consumption of component libraries.
 
 ## `isValidThemePreference()`
 
@@ -86,8 +82,7 @@ Without config:
 - `changeEventName` defaults to `theme-manager-theme-change`
 - `defaultTheme` defaults to `auto`
 
-`defaultTheme` is persisted and applied when no valid saved preference exists.
-A valid saved preference takes precedence.
+`defaultTheme` is persisted and applied when no valid saved preference exists. A valid saved preference takes precedence.
 
 Override `storageKey` and `changeEventName` when multiple apps should intentionally share one persisted theme preference and one theme-change channel.
 
