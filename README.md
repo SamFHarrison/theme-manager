@@ -53,7 +53,9 @@ function ThemeToggle() {
 }
 ```
 
-`useTheme()` must be used inside `ThemeProvider`.
+`useTheme()` should be used inside `ThemeProvider` for configurable, reactive theming.
+
+If rendered outside a provider, it falls back to a static light theme with a no-op `setTheme` function and logs a warning in development. This is to ease development and consumption of component libraries.
 
 With no config:
 
