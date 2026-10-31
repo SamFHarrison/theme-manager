@@ -1,6 +1,6 @@
 {
   "name": "@bigsams/theme-manager",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "A package for changing and persisting light, auto and dark themes in React apps.",
   "author": {
     "name": "Sam F-Harrison",
@@ -47,12 +47,12 @@
     "test:watch": "vitest"
   },
   "devDependencies": {
-    "@testing-library/react": "^16.3.0",
-    "@types/react": "^19.2.2",
-    "jsdom": "^26.1.0",
-    "tsup": "^8.5.0",
-    "typescript": "^5.9.3",
-    "vitest": "^3.2.4"
+    "@testing-library/react": "^16.3.3",
+    "@types/react": "^19.3.0",
+    "jsdom": "^30.1.3",
+    "tsup": "^9.0.0",
+    "typescript": "^6.0.3",
+    "vitest": "^5.0.5"
   },
   "repository": {
     "type": "git",
