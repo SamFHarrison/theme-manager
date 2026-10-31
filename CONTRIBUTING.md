@@ -12,17 +12,19 @@ This repo is a small React library, so the main goal of a contribution is to kee
 
 ## Local Setup
 
-This package targets:
-
-- Node `18+`
-- npm `10.9.0`
-- React `18+` as a peer dependency
-
-Install dependencies:
+For local development, use the Node version pinned in `.nvmrc` and its bundled npm:
 
 ```sh
-npm install
+nvm install
+nvm use
+npm ci
 ```
+
+The published package supports Node `18+` and React `18+` as a peer dependency.
+The development tools require a newer Node version; CI uses `.nvmrc` too.
+
+TypeScript stays on the latest 6.x release because tsup's declaration builder
+requires its compiler API, which TypeScript 7 does not provide.
 
 ## Project Layout
 
